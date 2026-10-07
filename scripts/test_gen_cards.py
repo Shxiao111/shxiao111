@@ -161,6 +161,45 @@ class CardTests(unittest.TestCase):
             svg = gen_cards.shelf_card(theme, d)
             ET.fromstring(svg)
 
+    def test_book_counts(self):
+        """Every language gets a volume and the shelf holds exactly 34, even when slivers rounded up to one book
+        would overfill it (one language at 97% and five at 0.6%: 32 + 5 floors to 37)."""
+        for shares in ([.97] + [.006] * 5, [1 / 6] * 6, [.5, .3, .2], [1.0], [1 / 40] * 34):
+            with self.subTest(shares=shares):
+                counts = gen_cards.book_counts(shares, 34)
+                self.assertEqual(sum(counts), 34)
+                self.assertTrue(all(c >= 1 for c in counts))
+        self.assertEqual(gen_cards.book_counts([.97] + [.006] * 5, 34), [29, 1, 1, 1, 1, 1])
+        self.assertEqual(gen_cards.book_counts([], 34), [])
+
+    def test_shelf_legend_fits(self):
+        """Six long language names are cut short rather than run the legend off the card."""
+        langs = [(n, 1 / 6, None) for n in ("Common Workflow Language", "Jupyter Notebook", "Visual Basic .NET",
+                                             "Classic ASP Extended", "TypeScript Definitions", "Rich Text Format")]
+        svg = gen_cards.shelf_card("dark", {"langs": langs, "repos": 6})
+        root = ET.fromstring(svg)
+        ns = "{http://www.w3.org/2000/svg}"
+        rows = [t for t in root.iter(f"{ns}text") if t.get("y") == str(gen_cards.SHELF_Y + 56)]
+        self.assertEqual(len(rows), 6)
+        last = rows[-1]
+        name, pct = (ts.text for ts in last.iter(f"{ns}tspan"))
+        right = (float(last.get("x")) + gen_cards.text_width("jbmono", name, 12)
+                 + 7 + gen_cards.text_width("jbmono", pct, 12))
+        self.assertLessEqual(right, 1200 - 48)
+        self.assertTrue(any(ts.text.endswith("...") for t in rows for ts in t.iter(f"{ns}tspan")))
+
+    def test_main(self):
+        """main() writes the eight cards, all well-formed, into OUT."""
+        repos = [repo("tool", "a tool", "2026-09-01", [("Rust", 5000, "#dea584"), ("Python", 900, "#3572A5")], 5)]
+        with tempfile.TemporaryDirectory() as out, mock.patch.object(gen_cards, "OUT", out),                 mock.patch.object(gen_cards, "gql", fake_gql(repos, [])), contextlib.redirect_stdout(io.StringIO()):
+            gen_cards.main()
+            names = sorted(os.listdir(out))
+            self.assertEqual(names, sorted(f"{n}-{t}.svg" for n in ("stats", "shelf", "toc", "works")
+                                           for t in ("dark", "light")))
+            for n in names:
+                with open(os.path.join(out, n), encoding="utf-8") as fh:
+                    ET.fromstring(fh.read())
+
     def test_all_days_chunking(self):
         """all_days chunks multi-year queries into batches of at most chunk_size."""
         queried = []
