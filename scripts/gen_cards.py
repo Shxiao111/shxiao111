@@ -300,9 +300,6 @@ def fmt(n):
     return f"{n/1000:.1f}k" if n >= 10000 else f"{n:,}"
 
 
-
-
-
 def text_width(key, text, size, spacing=0.0):
     """Advance width in px from the tables in fonts.json (printable ASCII); anything else falls back to a system
     font, so guess: 1em for wide CJK characters, .6em otherwise."""
@@ -359,11 +356,10 @@ def hue_dist(h1, h2):
 
 
 def resolve_cloth_colors(langs, fallback):
-    """100% faithful to GitHub official colors with zero hardcoded language names.
-    Detects any languages on the shelf that share the same color family (Hue distance < 30°),
-    and automatically polarizes lightness (dominant -> deep Oxford shade L~0.24, second -> bright
-    Royal shade L~0.54, third -> light tint L~0.72) while strictly preserving each language's
-    exact GitHub official hue angle. Non-colliding languages use 100% untouched GitHub colors."""
+    """Cloth colours from GitHub's language colours, with no language named here.  Languages whose hues fall
+    within 30° of each other are told apart by lightness (dominant -> deep L~0.24, second -> L~0.54, third -> light
+    tint L~0.72, and so on) and their saturation clamped, keeping each one's GitHub hue; a language with no
+    neighbour keeps its GitHub colour untouched."""
     raw_colors = [c or fallback[i % len(fallback)] for i, (_, _, c) in enumerate(langs)]
     n = len(langs)
     hls_list = [hex_to_hls(c) for c in raw_colors]
@@ -620,6 +616,23 @@ def vase(p, cx, base):
     return sprig + body, fall
 
 
+def book_counts(shares, n):
+    """Volumes per language: `shares` of n books by largest remainder, one at least each.  A few slivers rounded up
+    to their one volume can push the total past n, so the most generously rounded runs give one back."""
+    raw = [s * n for s in shares]
+    counts = [max(1, int(r)) for r in raw]
+    while shares and sum(counts) < n:
+        i = max(range(len(raw)), key=lambda i: raw[i] - counts[i])
+        counts[i] += 1
+    while sum(counts) > n:
+        candidates = [i for i in range(len(raw)) if counts[i] > 1]
+        if not candidates:
+            break
+        i = max(candidates, key=lambda i: counts[i] - raw[i])
+        counts[i] -= 1
+    return counts
+
+
 def shelf_card(theme, d):
     """Languages as a shelf of books: each language is a run of matching volumes, as many as its share of the code
     (one at least), titled on the first spine.  A bookend and a vase of maple close the row."""
@@ -632,16 +645,7 @@ def shelf_card(theme, d):
     N, X0, X1 = 34, 60, 1046
     if len(langs) > N:
         langs = langs[:N]
-    raw = [s * N for _, s, _ in langs]
-    counts = [max(1, int(r)) for r in raw]
-    while langs and sum(counts) < N:          # largest remainder
-        i = max(range(len(raw)), key=lambda i: raw[i] - counts[i])
-        counts[i] += 1
-    while sum(counts) > N:
-        candidates = [i for i in range(len(raw)) if counts[i] > 1]
-        if not candidates:
-            break
-        i = max(candidates, key=lambda i: counts[i] - raw[i])
+    counts = book_counts([s for _, s, _ in langs], N)
     cloth_map = resolve_cloth_colors(langs, p["langs"])
     vols = []
     for si, ((name, _, color), n) in enumerate(zip(langs, counts)):
@@ -736,15 +740,32 @@ def shelf_card(theme, d):
         f'<circle cx="{bx - 2.8}" cy="{SHELF_Y - 81.8}" r="1" fill="#fff" opacity=".4"/>'
     )
     flowers, falling = vase(p, 1112, SHELF_Y - 2)
-    legend, lx = [], 60
-    for si, (name, share, _) in enumerate(langs):
+    # the legend runs from under the first book to the note's right edge: long names close up the gaps first,
+    # then the longest are cut short to an even share of the line
+    pcts = [f"{share * 100:.1f}%" for _, share, _ in langs]
+    names = [name for name, _, _ in langs]
+    fixed = sum(15 + 7 + text_width("jbmono", pct, 12) for pct in pcts)
+    room = W - 48 - X0
+    gap = 30
+    if langs and fixed + sum(text_width("jbmono", n, 12) for n in names) + gap * (len(langs) - 1) > room:
+        gap = 16
+        budget = room - fixed - gap * (len(langs) - 1)
+        widths = sorted(text_width("jbmono", n, 12) for n in names)
+        cap = budget / len(names)
+        for k, w in enumerate(widths):   # names narrower than an even share leave their slack to the rest
+            if w > cap:
+                break
+            budget -= w
+            cap = budget / max(len(names) - k - 1, 1)
+        names = [clip_text("jbmono", n, 12, cap) for n in names]
+    legend, lx = [], X0
+    for si, (name, pct) in enumerate(zip(names, pcts)):
         col = next(v["cloth"] for v in vols if v["si"] == si)
-        pct = f"{share * 100:.1f}%"
         legend.append(f'<rect x="{lx}" y="{SHELF_Y + 45}" width="8" height="13" rx="1.5" fill="{col}"/>'
                       f'<rect x="{lx + 1}" y="{SHELF_Y + 48}" width="6" height="1.2" fill="{p["foil"]}" opacity=".8"/>'
                       f'<text x="{lx + 15}" y="{SHELF_Y + 56}" class="m" font-size="12"><tspan fill="{p["label"]}">{esc(name)}</tspan>'
                       f'<tspan fill="{p["muted"]}" dx="7">{pct}</tspan></text>')
-        lx += 15 + text_width("jbmono", name, 12) + 7 + text_width("jbmono", pct, 12) + 30
+        lx += 15 + text_width("jbmono", name, 12) + 7 + text_width("jbmono", pct, 12) + gap
     if not vols:
         books = [f'<text x="{W / 2}" y="{SHELF_Y - 60}" text-anchor="middle" class="m" font-size="13" fill="{p["muted"]}">no books on the shelf yet</text>']
     # the same window as the stats card above: the same shafts, drawn on down across this card, so the light reads
