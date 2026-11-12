@@ -57,17 +57,7 @@ jobs:
       - name: assemble preview
         if: github.ref_name != 'main'
         run: |
-          python - <<'PY'
-          import pathlib, re, sys
-          sys.path.insert(0, "scripts")
-          import gen_cards
-          text = pathlib.Path("README.md").read_text(encoding="utf-8")
-          toc = pathlib.Path("dist/toc-areas.html").read_text(encoding="utf-8")
-          works = pathlib.Path("dist/works-areas.html").read_text(encoding="utf-8")
-          text = gen_cards.splice_readme(text, toc, works)
-          text = re.sub(r"https://raw\.githubusercontent\.com/[^/\"]+/[^/\"]+/output/", "", text)
-          pathlib.Path("dist/README.md").write_text(text, encoding="utf-8", newline="\n")
-          PY
+          sed -E 's#https://raw\.githubusercontent\.com/[^/"]+/[^/"]+/output/##g' README.md > dist/README.md
           cp -r assets dist/assets
           printf '\n<sub>preview of <code>%s</code> at %s</sub>\n' "$GITHUB_REF_NAME" "${GITHUB_SHA::7}" >> dist/README.md
 
