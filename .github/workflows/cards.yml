@@ -22,7 +22,7 @@ permissions:
 
 # the schedule and a push can overlap; both force-push the output branch, so let one finish first
 concurrency:
-  group: profile-cards
+  group: profile-cards-${{ github.ref_name == 'main' && 'output' || 'preview' }}
   cancel-in-progress: false
 
 jobs:
@@ -51,10 +51,22 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_LOGIN: ${{ github.repository_owner }}
 
-      - name: publish to output branch
+      # off main nothing may touch the live cards: a run there (workflow_dispatch on a branch) publishes a whole
+      # preview instead - the branch's README and assets beside its cards, the card urls made relative - to the
+      # `preview` branch, where GitHub renders it as it will the profile
+      - name: assemble preview
+        if: github.ref_name != 'main'
+        run: |
+          sed -E 's#https://raw\.githubusercontent\.com/[^/"]+/[^/"]+/output/##g' README.md > dist/README.md
+          cp -r assets dist/assets
+          printf '
+<sub>preview of <code>%s</code> at %s</sub>
+' "$GITHUB_REF_NAME" "${GITHUB_SHA::7}" >> dist/README.md
+
+      - name: publish to the output branch, or off main to the preview branch
         uses: crazy-max/ghaction-github-pages@df5cc2bfa78282ded844b354faee141f06b41865 # v4.2.0
         with:
-          target_branch: output
+          target_branch: ${{ github.ref_name == 'main' && 'output' || 'preview' }}
           build_dir: dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

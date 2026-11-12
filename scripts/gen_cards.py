@@ -785,7 +785,7 @@ def shelf_card(theme, d):
         f'<rect x="50" y="{SHELF_Y - 2}" width="{X1 - 38}" height="3" rx="1.5" fill="#000" opacity="{".60" if dark else ".25"}"/>'
     )
     css = "@keyframes late{from{opacity:0}to{opacity:1}}.late{animation:late .8s ease both}"
-    note = f"{len(langs)} languages · {d['repos']} public repos · by size of code"
+    note = f"{len(langs)} language{'s' * (len(langs) != 1)} · {d['repos']} public repos · by size of code"
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="languages of {esc(LOGIN)} as a bookshelf">'
             + card_frame(p, W, H, "S")
             + f'<defs><style><![CDATA[{css}]]></style>{leaf_def("vleaf")}'
