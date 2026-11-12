@@ -2,7 +2,8 @@
 """Render the profile's stats panel, bookshelf, preface & contents book page and works-in-progress ledge as themed
 SVGs, and frame the contribution snake.
 
-Runs in GitHub Actions (see .github/workflows/cards.yml) and writes dist/{stats,shelf,toc,works}-{dark,light}.svg.
+Runs in GitHub Actions (see .github/workflows/cards.yml) and writes
+dist/{stats,shelf,toc,works,colophon}-{dark,light}.svg.
 If Platane/snk has already left dist/snake-{dark,light}.svg there, they are framed as the contributions card
 (a local run without them just skips it).
 Only the standard library is used. Fonts are embedded from scripts/fonts.json (which also carries their advance
@@ -25,7 +26,7 @@ import unicodedata
 import urllib.error
 import urllib.request
 
-from common import EASE, FONTS, esc, fontface, smooth_fade, star_path, write_svg
+from common import CALM, EASE, FONTS, esc, fontface, smooth_fade, star_path, write_svg
 from maple import LEAF_COLORS, STALK_END, leaf_def
 from paper import punch
 from sunlight import light_rays
@@ -34,6 +35,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 OUT = os.path.join(ROOT, "dist")
 LOGIN = os.environ.get("GH_LOGIN", "shxiao111")
+EDITION = os.environ.get("GITHUB_RUN_NUMBER")   # the workflow's run counter, the colophon's edition; a local run has none
 TOKEN = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
 
 # ---- the preface: the left page of the book card, beside the contents -----------------------------
@@ -57,7 +59,10 @@ query($login: String!, $prs: String!, $issues: String!) {
   issues: search(query: $issues, type: ISSUE, first: 1) { issueCount }
   user(login: $login) {
     contributionsCollection {
-      commitContributionsByRepository(maxRepositories: 100) { repository { isPrivate } contributions { totalCount } }
+      commitContributionsByRepository(maxRepositories: 100) {
+        repository { name isPrivate languages(first: 10, orderBy: {field: SIZE, direction: DESC}) { edges { size node { name color } } } }
+        contributions { totalCount }
+      }
       contributionCalendar { weeks { contributionDays { date contributionCount } } }
     }
     pinnedItems(first: 6, types: REPOSITORY) {
@@ -190,23 +195,16 @@ def collect():
                       "issues": f"author:{LOGIN} is:issue is:public"})
     u = res["user"]
     repo_count, repos = all_repos()
-    langs, colors = {}, {}
-    for r in repos:
-        for e in r["languages"]["edges"]:
-            name = e["node"]["name"]
-            if name in SKIP_LANGS:
-                continue
-            langs[name] = langs.get(name, 0) + e["size"]
-            colors[name] = e["node"]["color"]
-    total_lang = sum(langs.values()) or 1
-    # the six biggest, leaving out slivers under half a percent
-    top = [(n, s / total_lang, colors[n]) for n, s in sorted(langs.items(), key=lambda kv: -kv[1])
-           if s / total_lang >= .005][:6]
     # my own repositories, latest first; the profile repository itself is where the reader already is
     own = sorted((r for r in repos if r["name"].lower() != LOGIN.lower()), key=lambda r: r["pushedAt"], reverse=True)
     # chapter ii: the pinned repositories
     works = [volume(r) for r in u["pinnedItems"]["nodes"] if r and not r["isPrivate"]][:WORKS_MAX]
     cc = u["contributionsCollection"]
+    # the bookshelf: every public repository committed to over the calendar's 12 months, mine or not, the most
+    # written-in first
+    shelf = sorted(({"name": r["repository"]["name"], "commits": r["contributions"]["totalCount"], **main_lang(r["repository"])}
+                    for r in cc["commitContributionsByRepository"] if not r["repository"]["isPrivate"]),
+                   key=lambda v: -v["commits"])
     days = [(d["date"], d["contributionCount"]) for w in cc["contributionCalendar"]["weeks"] for d in w["contributionDays"]]
     today = dt.date.fromisoformat(days[-1][0])   # the calendar ends on github's "today"
     return {
@@ -216,13 +214,12 @@ def collect():
         "repos": repo_count,
         # public commits over the calendar's 12 months; restrictedContributionsCount would add private PRs and
         # reviews too, not just commits
-        "commits": sum(r["contributions"]["totalCount"] for r in cc["commitContributionsByRepository"]
-                       if not r["repository"]["isPrivate"]),
+        "commits": sum(v["commits"] for v in shelf),
         "prs": res["prs"]["issueCount"],
         "issues": res["issues"]["issueCount"],
         "active_days": sum(1 for _, c in days if c > 0),
         "days_count": len(days),
-        "langs": top,
+        "shelf": shelf,
         "own": [{"name": r["name"], "pushed": dt.date.fromisoformat(r["pushedAt"][:10]),
                  "desc": " ".join((r["description"] or "").split()),
                  "langs": [e["node"]["name"] for e in r["languages"]["edges"] if e["node"]["name"] not in SKIP_LANGS]}
@@ -231,13 +228,17 @@ def collect():
     }
 
 
+def main_lang(r):
+    """The language a repository is mostly written in, and github's colour for it."""
+    lang = next((e["node"] for e in r["languages"]["edges"] if e["node"]["name"] not in SKIP_LANGS), None)
+    return {"lang": lang["name"] if lang else "", "color": lang["color"] if lang else None}
+
+
 def volume(r):
     """A repository as one volume in the works-in-progress bookcase: its main language colours the cover's wash."""
-    lang = next((e["node"] for e in r["languages"]["edges"] if e["node"]["name"] not in SKIP_LANGS), None)
     return {"name": r["name"], "owner": r["owner"]["login"], "desc": " ".join((r["description"] or "").split()),
             "stars": r["stargazerCount"], "forks": r["forkCount"],
-            "pushed": dt.date.fromisoformat(r["pushedAt"][:10]),
-            "lang": lang["name"] if lang else "", "color": lang["color"] if lang else None}
+            "pushed": dt.date.fromisoformat(r["pushedAt"][:10]), **main_lang(r)}
 
 
 PAL = {
@@ -284,7 +285,7 @@ CSS = (fontface("outfit") + fontface("jbmono") +
        ".t{font-family:'Outfit',sans-serif;font-weight:800}"
        ".m{font-family:'JetBrains Mono',monospace;font-weight:500}"
        "@keyframes bar{from{transform:scaleX(0)}to{transform:scaleX(1)}}"
-       ".b{transform-origin:left;animation:bar 1.2s cubic-bezier(.2,.8,.2,1) .2s both}")
+       ".b{transform-origin:left;animation:bar 1.2s cubic-bezier(.2,.8,.2,1) .2s both}" + CALM)
 
 ICON = {
     "star": '<path d="M0,-6.5 L1.9,-2 L6.5,-1.7 L2.9,1.4 L4,6 L0,3.5 L-4,6 L-2.9,1.4 L-6.5,-1.7 L-1.9,-2 Z"/>',
@@ -460,8 +461,6 @@ def stats_panel(theme, d):
     # top slice of one long shaft that carries on over the seam (see PAIR_H)
     sun_defs, sun = light_rays("sunS", 30, W - 60, H, theme == "dark", from_left=False, seed=9, count=4,
                                span=PAIR_H, y0=0)
-    today = d["today"]
-    updated = f"updated {today.strftime('%b').lower()} {today.day}, {today.year}"
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="github stats of {esc(LOGIN)}">
 <defs><style><![CDATA[{CSS}]]></style>
 <clipPath id="pcard"><rect width="{W}" height="{H}" rx="28" ry="28"/></clipPath>
@@ -486,10 +485,9 @@ def stats_panel(theme, d):
 </g>
 <image href="data:image/jpeg;base64,{STATS_IMG}" x="{ix}" y="0" width="{IW}" height="{H}" preserveAspectRatio="xMidYMid slice" mask="url(#pmask)" filter="url(#ptint)"/>
 {sun}
-{sparks}
+<g class="mo">{sparks}</g>
 <rect width="{W}" height="{H}" filter="url(#pgrain)" opacity="{p['grainO']}"/>
 <text x="56" y="84" class="m" font-size="13" letter-spacing="2.5" fill="{p['accent']}">github stats</text>
-<text x="636" y="84" class="m" font-size="11" text-anchor="end" fill="{p['muted']}">{updated}</text>
 {"".join(body)}
 <rect x="1" y="1" width="{W-2}" height="{H-2}" rx="27" fill="none" stroke="{p['frame']}" stroke-opacity="{p['frameO']}" stroke-width="1.5"/>
 </g>
@@ -610,7 +608,7 @@ def vase(p, cx, base):
     kt = "0;.1;.2;.3;.4;1"
     spl = f'keyTimes="{kt}" calcMode="spline" keySplines="{";".join([EASE] * 5)}" dur="18s" begin="6s" repeatCount="indefinite"'
     c = LEAF_COLORS[1]
-    fall = (f'<g transform="translate({cx} {mouth})"><g opacity="0">'
+    fall = (f'<g class="mo" transform="translate({cx} {mouth})"><g opacity="0">'
             f'<animate attributeName="opacity" values="0;1;1;1;0;0" keyTimes="0;.03;.4;.52;.6;1" dur="18s" begin="6s" repeatCount="indefinite"/>'
             f'<animateTransform attributeName="transform" type="translate" values="-26 -60;-10 -32;-30 -4;6 26;30 {base - 3 - mouth};30 {base - 3 - mouth}" {spl}/>'
             f'<g><animateTransform attributeName="transform" type="scale" values="1 1;1 1;1 1;1 1;1 .35;1 .35" {spl}/>'
@@ -637,29 +635,40 @@ def book_counts(shares, n):
 
 
 def shelf_card(theme, d):
-    """Languages as a shelf of books: each language is a run of matching volumes, as many as its share of the code
-    (one at least), titled on the first spine.  A bookend and a vase of maple close the row."""
+    """The year's writing as a shelf of books: each repository committed to is a set of matching volumes, titled on
+    its first spine and bound in its main language's cloth.  A set has as many volumes as the square root of its
+    commits earns it (one at least), so a year spent in one repository still leaves the others their place.
+    A bookend and a vase of maple close the row."""
     p = PAL[theme]
     W, H = 1200, SHELF_H
     dark = theme == "dark"
     rnd = random.Random(7)
 
-    langs = d["langs"]
     N, X0, X1 = 34, 60, 1046
-    if len(langs) > N:
-        langs = langs[:N]
-    counts = book_counts([s for _, s, _ in langs], N)
+    shelf = d["shelf"][:N]
+    total = sum(r["commits"] for r in shelf) or 1
+    share = {}                    # of the commits, by the main language of the repository they went to
+    for r in shelf:
+        share[r["lang"]] = share.get(r["lang"], 0) + r["commits"] / total
+    langs = sorted(((n or "other", s, next(r["color"] for r in shelf if r["lang"] == n)) for n, s in share.items()),
+                   key=lambda lang: -lang[1])
     cloth_map = resolve_cloth_colors(langs, p["langs"])
-    vols = []
-    for si, ((name, _, color), n) in enumerate(zip(langs, counts)):
-        base_color = cloth_map.get(name, color or p["langs"][si % len(p["langs"])])
-        cloth = base_color
-        if p["clothDim"] != "0":
-            cloth = mix(cloth, "#000", float(p["clothDim"]))
+    if p["clothDim"] != "0":
+        cloth_map = {n: mix(c, "#000", float(p["clothDim"])) for n, c in cloth_map.items()}
+    langs = langs[:6]             # what the legend has room for
+    roots = [r["commits"] ** .5 for r in shelf]
+    counts = book_counts([x / sum(roots) for x in roots], N)
+    vols, sets = [], {}
+    for si, (r, n) in enumerate(zip(shelf, counts)):
+        name = r["name"]
+        # sets bound in one language's cloth are told apart by its shade, as well as by their trim
+        j = sets[r["lang"]] = sets.get(r["lang"], -1) + 1
+        cloth = mix(cloth_map[r["lang"] or "other"], "#fff" if j % 2 else "#000", (0, .2, .16, .34)[j % 4])
         bw, bh = rnd.uniform(24, 31), rnd.uniform(146, 172)
+        room = text_width("outfit", name, 8.5, .5) + 84   # the height a spine needs to carry this title whole
         for k in range(n):   # a set, but no two volumes quite alike: worn, faded, a little taller or thinner
             vols.append({"si": si, "name": name, "first": k == 0, "idx": k, "w": bw * rnd.uniform(.84, 1.16),
-                         "h": min(184, bh + rnd.uniform(-10, 10)), "cloth": cloth,
+                         "h": min(184, max(bh + rnd.uniform(-10, 10), room * (k == 0))), "cloth": cloth,
                          "c": mix(cloth, rnd.choice(("#000", "#fff")), rnd.uniform(0, .11))})
     gap = 1.2
     k = (X1 - X0 - gap * (len(vols) - 1)) / max(sum(v["w"] for v in vols), 1)
@@ -673,12 +682,14 @@ def shelf_card(theme, d):
         y = SHELF_Y - h
         foil = p["foil"] if luma(v["c"]) < .5 else p["foilDark"]
         title = ""
-        # a long name is set smaller to fit between the head and foot trim, down to a size that still reads
-        size = min(11, 11 * (h - 70) / text_width("outfit", v["name"], 11, .6))
-        if v["first"] and w >= 18 and size >= 8.5:
+        # a long name is set smaller to fit between the head and foot trim, down to a size that still reads, and
+        # past that it is cut short
+        name = clip_text("outfit", v["name"], 8.5, h - 84)
+        size = max(8.5, min(11, 11 * (h - 70) / text_width("outfit", name, 11, .6)))
+        if v["first"] and w >= 18:
             # spine titles read top to bottom; rotated, the glyphs sit to the right of the baseline
             title = (f'<text transform="translate({x + w / 2 - size * .36:.1f} {y + 32:.1f}) rotate(90)" class="t" font-size="{size:.1f}" '
-                     f'letter-spacing="{size * .055:.2f}" fill="{foil}">{esc(v["name"])}</text>')
+                     f'letter-spacing="{size * .055:.2f}" fill="{foil}">{esc(name)}</text>')
         body = (f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="2" fill="{v["c"]}"/>'
                 + spine_trim(v["si"] % 3, x, y, w, foil, not title, vol_idx=v["idx"]) + title
                 + f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="2" fill="url(#spine)"/>')
@@ -763,8 +774,7 @@ def shelf_card(theme, d):
         names = [clip_text("jbmono", n, 12, cap) for n in names]
     legend, lx = [], X0
     for si, (name, pct) in enumerate(zip(names, pcts)):
-        col = next(v["cloth"] for v in vols if v["si"] == si)
-        legend.append(f'<rect x="{lx}" y="{SHELF_Y + 45}" width="8" height="13" rx="1.5" fill="{col}"/>'
+        legend.append(f'<rect x="{lx}" y="{SHELF_Y + 45}" width="8" height="13" rx="1.5" fill="{cloth_map[langs[si][0]]}"/>'
                       f'<rect x="{lx + 1}" y="{SHELF_Y + 48}" width="6" height="1.2" fill="{p["foil"]}" opacity=".8"/>'
                       f'<text x="{lx + 15}" y="{SHELF_Y + 56}" class="m" font-size="12"><tspan fill="{p["label"]}">{esc(name)}</tspan>'
                       f'<tspan fill="{p["muted"]}" dx="7">{pct}</tspan></text>')
@@ -785,8 +795,9 @@ def shelf_card(theme, d):
         f'<rect x="50" y="{SHELF_Y - 2}" width="{X1 - 38}" height="3" rx="1.5" fill="#000" opacity="{".60" if dark else ".25"}"/>'
     )
     css = "@keyframes late{from{opacity:0}to{opacity:1}}.late{animation:late .8s ease both}"
-    note = f"{len(langs)} language{'s' * (len(langs) != 1)} · {d['repos']} public repos · by size of code"
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="languages of {esc(LOGIN)} as a bookshelf">'
+    n = len(d["shelf"])
+    note = f"{n} repositor{'y' if n == 1 else 'ies'} · {fmt(sum(r['commits'] for r in d['shelf']))} commits · last 12 months"
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="the repositories {esc(LOGIN)} wrote in this year, as a bookshelf">'
             + card_frame(p, W, H, "S")
             + f'<defs><style><![CDATA[{css}]]></style>{leaf_def("vleaf")}'
             f'<linearGradient id="spine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".36"/>'
@@ -1094,7 +1105,7 @@ def wash(p, v, base, y0, y1):
     petals = []
     for k in range(2):
         x0, dur, beg = rnd.uniform(30, cw - 60), rnd.uniform(11, 16), -rnd.uniform(0, 14)
-        petals.append(f'<g><animateTransform attributeName="transform" type="translate" values="{x0:.0f} {y0 - 30:.0f};{x0 + 40:.0f} {(y0 + y1) / 2:.0f};{x0 + 10:.0f} {y1 + 10}" '
+        petals.append(f'<g class="mo"><animateTransform attributeName="transform" type="translate" values="{x0:.0f} {y0 - 30:.0f};{x0 + 40:.0f} {(y0 + y1) / 2:.0f};{x0 + 10:.0f} {y1 + 10}" '
                       f'dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/>'
                       f'<path d="{BLOSSOM_PETAL}" transform="scale(1.5)" fill="{p["blossom"]}" opacity=".85">'
                       f'<animateTransform attributeName="transform" type="rotate" values="0;200;360" additive="sum" dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/></path></g>')
@@ -1179,7 +1190,7 @@ def cover(p, i, v, today, shade=0, number=1, band=0):
                      for j, ln in enumerate(copy))
            + badge +
            f'<text x="14" y="{ch - 9}" class="m" font-size="11" fill="{oink}" opacity=".75">{esc(clip_text("jbmono", v["lang"], 11, cw - 28))}</text>')
-    glint = (f'<g transform="translate(-120 0)">'
+    glint = (f'<g class="mo" transform="translate(-120 0)">'
              f'<animateTransform attributeName="transform" type="translate" values="-120 0;-120 0;300 0;300 0" keyTimes="0;.84;.93;1" '
              f'calcMode="spline" keySplines="0 0 1 1;{EASE};0 0 1 1" dur="15s" begin="{3 + i * 1.6:.1f}s" repeatCount="indefinite"/>'
              f'<rect y="-20" width="70" height="{ch + 40}" transform="skewX(-18)" fill="url(#glint)"/></g>')
@@ -1409,7 +1420,7 @@ def works_card(theme, d):
             + sun +   # behind the bookcase, so the light never dims the books' print
             f'<rect x="{cx + 8}" y="{cy + 12}" width="{cw}" height="{chh}" fill="#000" opacity=".35" filter="url(#caseShade)"/>'
             f'<g transform="translate({cx} {cy})">{case}<rect x="-10" width="120" height="{chh}" fill="url(#haze)"/></g>'
-            + "".join(petals) + "</g>"
+            + '<g class="mo">' + "".join(petals) + "</g></g>"
             f'<rect x="0.75" y="0.75" width="{W - 1.5}" height="{H - 1.5}" rx="16" fill="none" stroke="{p["border"]}" stroke-width="1.5"/></svg>')
 
 
@@ -1427,7 +1438,7 @@ def snake_card(theme, raw, d):
     gx, gy = 48, 78               # top-left of the grid
     css = (fontface("outfit") + fontface("jbmono") +
            ".t{font-family:'Outfit',sans-serif;font-weight:800}"
-           ".m{font-family:'JetBrains Mono',monospace;font-weight:500}")
+           ".m{font-family:'JetBrains Mono',monospace;font-weight:500}" + CALM)
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="contribution snake of {esc(LOGIN)}">'
             f'<defs><style><![CDATA[{css}]]></style>'
             f'<linearGradient id="bgN" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{p["bg0"]}"/><stop offset="1" stop-color="{p["bg1"]}"/></linearGradient>'
@@ -1439,6 +1450,24 @@ def snake_card(theme, raw, d):
             f'<text x="{W-gx}" y="40" class="m" font-size="12" text-anchor="end" fill="{p["label"]}">{d["active_days"]} active days · last 12 months</text>'
             f'<svg x="{gx + vx*scale:.1f}" y="{gy + vy*scale:.1f}" width="{vw*scale:.1f}" height="{vh*scale:.1f}" viewBox="{vb}">{inner}</svg>'
             f'</svg>')
+
+
+def colophon_card(theme, d):
+    """The colophon, on the last page as in any book: which edition this is and when it was printed (the workflow's
+    run number, and github's today), what it is set in and who bound it.  No frame: it is print on the page."""
+    p = PAL[theme]
+    W, H = 1200, 112
+    t = d["today"]
+    printed = f"printed {t.strftime('%b').lower()} {t.day}, {t.year}"
+    line = f"Edition no. {EDITION}, {printed}" if EDITION else printed.capitalize()
+    css = (fontface("caveat") + fontface("jbmono") + ".h{font-family:'Caveat',cursive;font-weight:600}"
+           ".m{font-family:'JetBrains Mono',monospace;font-weight:500}")
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="colophon: {esc(line)}">'
+            f'<defs><style><![CDATA[{css}]]></style></defs>'
+            f'<g transform="translate({W / 2:.0f} 16)"><path d="{star_path(6)}" fill="{p["accent"]}"/></g>'
+            f'<text x="{W / 2:.0f}" y="62" text-anchor="middle" class="h" font-size="34" fill="{p["title"]}">{esc(line)}</text>'
+            f'<text x="{W / 2:.0f}" y="94" text-anchor="middle" class="m" font-size="14" letter-spacing="1" fill="{p["muted"]}">'
+            f'set in Outfit, Caveat &amp; JetBrains Mono · bound daily by GitHub Actions</text></svg>')
 
 
 def wrap_snake(d):
@@ -1460,10 +1489,12 @@ def main():
     d = collect()
     wrap_snake(d)
     for theme in ("dark", "light"):
-        for name, fn in (("stats", stats_panel), ("shelf", shelf_card), ("toc", toc_card), ("works", works_card)):
+        for name, fn in (("stats", stats_panel), ("shelf", shelf_card), ("toc", toc_card), ("works", works_card),
+                         ("colophon", colophon_card)):
             path = os.path.join(OUT, f"{name}-{theme}.svg")
             svg = fn(theme, d)
-            if name not in ("toc", "works"):   # a book page with a curled corner, and a bookcase: no binder holes
+            # a book page with a curled corner, a bookcase, and print on the last page: no binder holes
+            if name not in ("toc", "works", "colophon"):
                 # the shelf's holes go down the right edge, past the vase, so the row of books starts on a clean edge
                 svg = punch(svg, theme == "dark", side="right" if name == "shelf" else "left")
             write_svg(path, svg)

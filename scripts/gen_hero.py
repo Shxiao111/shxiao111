@@ -8,7 +8,7 @@ Fonts come from scripts/fonts.json (Google Fonts subsets), the art from scripts/
 import base64, io, math, os, random
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.ttLib import TTFont
-from common import EASE, FONTS as fonts, esc, fontface, smooth_fade, star_path as star, write_svg
+from common import CALM, EASE, FONTS as fonts, esc, fontface, smooth_fade, star_path as star, write_svg
 from maple import LEAF_COLORS, leaf_def
 from paper import punch
 from sunlight import halo
@@ -91,7 +91,7 @@ BASE_CSS = """
 .name{font-family:'Outfit',sans-serif;font-weight:800;font-size:92px;letter-spacing:-2px}
 .pill{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px}
 .foot-en{font-family:'Caveat',cursive;font-weight:600;font-size:%dpx}
-""" % FOOT_SIZE
+""" % FOOT_SIZE + CALM
 
 GRAIN = ('<filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" '
          'baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>')
@@ -114,8 +114,8 @@ def dust(p, w, h, seed=7, n=18):
             tw = rnd.uniform(2.5, 5.5)
             sharp.append(f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{r:.1f}" opacity="{o:.2f}">{anim}'
                          f'<animate attributeName="fill-opacity" values="1;.25;1" dur="{tw:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/></circle>')
-    return (f'<g filter="url(#blur9)" fill="{p["dust"]}">' + "".join(soft) + "</g>"
-            f'<g fill="{p["dust"]}">' + "".join(sharp) + "</g>")
+    return (f'<g class="mo"><g filter="url(#blur9)" fill="{p["dust"]}">' + "".join(soft) + "</g>"
+            f'<g fill="{p["dust"]}">' + "".join(sharp) + "</g></g>")
 
 SPARKS = [(1128,76,9,3.1,0.0),(1150,300,8,2.6,0.8),(660,52,6,3.6,1.5),(1090,428,7,2.9,0.4),(498,64,7,3.3,2.1),(930,40,5,2.4,1.1),(1136,196,5,3.8,0.6)]
 def sparkles(p):
@@ -126,7 +126,7 @@ def sparkles(p):
             f'<animate attributeName="opacity" values="0.15;1;0.15" dur="{dur}s" begin="{beg}s" repeatCount="indefinite"/>'
             f'<animateTransform attributeName="transform" type="scale" values="0.7;1.15;0.7" dur="{dur}s" begin="{beg}s" repeatCount="indefinite"/>'
             f'</path></g>')
-    return "\n".join(out)
+    return '<g class="mo">' + "\n".join(out) + "</g>"
 
 def pills(p, x0=TX, y0=326, appear=None):
     """`appear`: fade the pills in one after another from this time (s); they stay visible without SMIL."""
@@ -268,7 +268,7 @@ def hero(theme):
 <text x="{TX}" y="118" class="over" fill="{p['over']}" clip-path="url(#typeGreet)">{GREETING}</text>
 <g clip-path="url(#typeGlow)"><text x="{TX}" y="222" class="name" fill="{p['nameGlow']}" opacity="{p['glowO']}" filter="url(#blur18)">{NAME}</text></g>
 <text x="{TX}" y="222" class="name" fill="url(#nameGrad)" clip-path="url(#typeName)">{NAME}</text>
-<rect x="{cursor_x:.1f}" y="160" width="7" height="64" rx="2" fill="{p['cursor']}">{cur}</rect>
+<rect class="mo" x="{cursor_x:.1f}" y="160" width="7" height="64" rx="2" fill="{p['cursor']}">{cur}</rect>
 {handwriting(TAGLINE, TX, 282, TAG_SIZE, p['tag'], write_start)}
 {pills(p, appear=write_end)}
 <rect x="1" y="1" width="{W-2}" height="{H-2}" rx="27" fill="none" stroke="{p['border']}" stroke-opacity="{p['borderO']}" stroke-width="1.5"/>
@@ -294,20 +294,20 @@ def chapter(theme, title):
             ink.append(f'<circle cx="{x - dot_gap / 2:.1f}" cy="{base - 11}" r="2.6" fill="{c1}"/>')
         ink.append(handwriting(t, x, base, size, PAL[theme]["tag"] if k == len(parts) - 1 else c1))
         x += width("caveat", t, size) + dot_gap
-    turn = '<animateTransform attributeName="transform" type="rotate" values="0;90" dur="6s" repeatCount="indefinite"/>'
     label, ink = esc(title), "\n".join(ink)
     # the gradients are laid out in user space: a horizontal line's bounding box has no height, and a gradient sized
     # to such a box isn't painted at all, so the line would vanish
     return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 68" width="1200" height="68" role="img" aria-label="{label}">
 <title>{label}</title>
 <defs>
+<style>@keyframes turn{{to{{transform:rotate(90deg)}}}}.s{{transform-box:fill-box;transform-origin:center;animation:turn 6s linear infinite}}{CALM}</style>
 <linearGradient id="l" gradientUnits="userSpaceOnUse" x1="60" y1="0" x2="{x0:.1f}" y2="0"><stop offset="0" stop-color="{c1}" stop-opacity="0"/><stop offset="1" stop-color="{c1}" stop-opacity=".9"/></linearGradient>
 <linearGradient id="r" gradientUnits="userSpaceOnUse" x1="{x1:.1f}" y1="0" x2="1140" y2="0"><stop offset="0" stop-color="{c1}" stop-opacity=".9"/><stop offset="1" stop-color="{c2}" stop-opacity="0"/></linearGradient>
 </defs>
 <line x1="60" y1="{mid}" x2="{x0 - 12:.1f}" y2="{mid}" stroke="url(#l)" stroke-width="1.5"/>
 <line x1="{x1 + 12:.1f}" y1="{mid}" x2="1140" y2="{mid}" stroke="url(#r)" stroke-width="1.5"/>
-<g transform="translate({x0:.1f} {mid})"><path d="{star(7)}" fill="{c1}">{turn}</path></g>
-<g transform="translate({x1:.1f} {mid})"><path d="{star(7)}" fill="{c1}">{turn}</path></g>
+<g transform="translate({x0:.1f} {mid})"><path class="s" d="{star(7)}" fill="{c1}"/></g>
+<g transform="translate({x1:.1f} {mid})"><path class="s" d="{star(7)}" fill="{c1}"/></g>
 {ink}
 </svg>
 """
@@ -344,7 +344,7 @@ def leaves(w, h, seed=21):
             f'<g transform="scale({s:.2f})"><use href="#leaf" fill="{c}">'
             f'<animateTransform attributeName="transform" type="scale" values="1 1;.25 1;1 1" keyTimes="0;.5;1" calcMode="spline" keySplines="{SWING}" dur="{flip:.1f}s" begin="{fbeg:.1f}s" repeatCount="indefinite"/>'
             f'</use></g></g></g></g></g>')
-    return "\n".join(out)
+    return '<g class="mo">' + "\n".join(out) + "</g>"
 
 # the rip down the last page's right edge, traced from a sketch: (how far in from the rightmost point, px of the
 # sketch; how far down, 0-1).  It starts in from the top corner, cuts back further, bellies out, bites in sharply

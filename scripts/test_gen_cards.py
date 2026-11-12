@@ -53,6 +53,7 @@ class CardTests(unittest.TestCase):
                 with self.subTest(card=fn.__name__, theme=theme):
                     svg = fn(theme, d)
                     ET.fromstring(svg)
+                    self.assertIn("prefers-reduced-motion", svg)
                     ET.fromstring(punch(svg, theme == "dark"))
 
     def test_full_profile(self):
@@ -61,13 +62,16 @@ class CardTests(unittest.TestCase):
                  repo("notes", None, "2025-03-02", [("Jupyter Notebook", 3000, None)]),
                  repo("x" * 80, "  spaced \n out  ", "2026-01-01", [("TypeScript", 800, "#3178c6"), ("Vue", 200, "#41b883")]),
                  repo("empty", None, "2024-05-05", [])]
-        commits = [{"repository": {"isPrivate": False}, "contributions": {"totalCount": 7}},
-                   {"repository": {"isPrivate": True}, "contributions": {"totalCount": 100}}]
+        commits = [{"repository": repo("tool", None, "2026-09-01", [("Shell", 9000, None), ("Rust", 5000, "#dea584")]),
+                    "contributions": {"totalCount": 7}},
+                   {"repository": repo("secret", None, "2026-09-01", [], private=True), "contributions": {"totalCount": 100}}]
         with mock.patch.object(gen_cards, "gql", fake_gql(repos, commits)):
             d = gen_cards.collect()
         self.assertEqual(d["repos"], 5)
         self.assertEqual(d["stars"], 8)
         self.assertEqual(d["commits"], 7)
+        # the shelf holds what was committed to, private work left out, each set in its main language's cloth
+        self.assertEqual(d["shelf"], [{"name": "tool", "commits": 7, "lang": "Rust", "color": "#dea584"}])
         self.assertEqual((d["prs"], d["issues"]), (3, 1))
         self.assertEqual([r["name"] for r in d["own"]][:2], ["tool", "x" * 80])
         self.assertEqual(d["works"], [])   # nothing pinned: an empty bookcase
@@ -131,7 +135,7 @@ class CardTests(unittest.TestCase):
     def test_empty_profile(self):
         with mock.patch.object(gen_cards, "gql", fake_gql([], [])):
             d = gen_cards.collect()
-        self.assertEqual((d["repos"], d["commits"], d["langs"], d["own"]), (0, 0, [], []))
+        self.assertEqual((d["repos"], d["commits"], d["shelf"], d["own"]), (0, 0, [], []))
         self.render_all(d)
 
     def test_snake(self):
@@ -155,13 +159,41 @@ class CardTests(unittest.TestCase):
         self.assertIn(">the bookworm<", framed)
         self.assertIn("42 active days · last 12 months", framed)
 
-    def test_shelf_many_languages(self):
-        """shelf_card handles more than 34 languages without crashing on empty candidates."""
-        langs = [(f"L{i}", 1 / 40, None) for i in range(40)]
-        d = {"langs": langs, "repos": 40}
+    def test_shelf_many_repositories(self):
+        """shelf_card handles more than 34 repositories without crashing on empty candidates; the note counts them all."""
+        d = {"shelf": [{"name": f"repo-{i}", "commits": 1, "lang": f"L{i}", "color": None} for i in range(40)]}
         for theme in ("dark", "light"):
             svg = gen_cards.shelf_card(theme, d)
             ET.fromstring(svg)
+            self.assertIn("40 repositories · 40 commits", svg)
+
+    def test_shelf_sets(self):
+        """A set per repository: one that took most of the year's commits doesn't crowd the others off, every set is
+        titled, a long name cut short, and a repository with no language of its own is shelved as "other"."""
+        shelf = [{"name": "the-big-one", "commits": 400, "lang": "Python", "color": "#3572A5"},
+                 {"name": "a-repository-name-far-too-long-for-any-spine", "commits": 9, "lang": "Python", "color": "#3572A5"},
+                 {"name": "notes", "commits": 1, "lang": "", "color": None}]
+        svg = gen_cards.shelf_card("light", {"shelf": shelf})
+        root = ET.fromstring(svg)
+        spines = [t.text for t in root.iter("{http://www.w3.org/2000/svg}text") if "rotate(90)" in (t.get("transform") or "")]
+        titles = [t for t in spines if not set(t) <= set("IVXL")]   # the rest are volume numbers
+        self.assertEqual(titles[0], "the-big-one")
+        self.assertTrue(titles[1].startswith("a-repository") and titles[1].endswith("..."))
+        self.assertEqual(titles[2], "notes")
+        self.assertLess(len(spines) - 3, 30)   # by commits alone the big one would take 33 of the 34 volumes
+        self.assertIn(">other<", svg)
+        self.assertIn("3 repositories · 410 commits", svg)
+        self.assertIn("1 repository ·", gen_cards.shelf_card("dark", {"shelf": shelf[:1]}))
+
+    def test_colophon(self):
+        """The colophon gives the edition when the workflow numbers the run, and the day either way."""
+        d = {"today": TODAY}
+        with mock.patch.object(gen_cards, "EDITION", "57"):
+            svg = gen_cards.colophon_card("dark", d)
+        ET.fromstring(svg)
+        self.assertIn(">Edition no. 57, printed sep 23, 2026<", svg)
+        with mock.patch.object(gen_cards, "EDITION", None):
+            self.assertIn(">Printed sep 23, 2026<", gen_cards.colophon_card("light", d))
 
     def test_book_counts(self):
         """Every language gets a volume and the shelf holds exactly 34, even when slivers rounded up to one book
@@ -176,9 +208,10 @@ class CardTests(unittest.TestCase):
 
     def test_shelf_legend_fits(self):
         """Six long language names are cut short rather than run the legend off the card."""
-        langs = [(n, 1 / 6, None) for n in ("Common Workflow Language", "Jupyter Notebook", "Visual Basic .NET",
-                                             "Classic ASP Extended", "TypeScript Definitions", "Rich Text Format")]
-        svg = gen_cards.shelf_card("dark", {"langs": langs, "repos": 6})
+        shelf = [{"name": f"repo-{i}", "commits": 1, "lang": n, "color": None}
+                 for i, n in enumerate(("Common Workflow Language", "Jupyter Notebook", "Visual Basic .NET",
+                                        "Classic ASP Extended", "TypeScript Definitions", "Rich Text Format"))]
+        svg = gen_cards.shelf_card("dark", {"shelf": shelf})
         root = ET.fromstring(svg)
         ns = "{http://www.w3.org/2000/svg}"
         rows = [t for t in root.iter(f"{ns}text") if t.get("y") == str(gen_cards.SHELF_Y + 56)]
@@ -191,12 +224,12 @@ class CardTests(unittest.TestCase):
         self.assertTrue(any(ts.text.endswith("...") for t in rows for ts in t.iter(f"{ns}tspan")))
 
     def test_main(self):
-        """main() writes the eight cards, all well-formed, into OUT."""
+        """main() writes the ten cards, all well-formed, into OUT."""
         repos = [repo("tool", "a tool", "2026-09-01", [("Rust", 5000, "#dea584"), ("Python", 900, "#3572A5")], 5)]
         with tempfile.TemporaryDirectory() as out, mock.patch.object(gen_cards, "OUT", out),                 mock.patch.object(gen_cards, "gql", fake_gql(repos, [])), contextlib.redirect_stdout(io.StringIO()):
             gen_cards.main()
             names = sorted(os.listdir(out))
-            self.assertEqual(names, sorted(f"{n}-{t}.svg" for n in ("stats", "shelf", "toc", "works")
+            self.assertEqual(names, sorted(f"{n}-{t}.svg" for n in ("stats", "shelf", "toc", "works", "colophon")
                                            for t in ("dark", "light")))
             for n in names:
                 with open(os.path.join(out, n), encoding="utf-8") as fh:

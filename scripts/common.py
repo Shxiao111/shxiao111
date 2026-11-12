@@ -10,6 +10,10 @@ with open(os.path.join(HERE, "fonts.json"), encoding="utf-8") as fh:
     FONTS = json.load(fh)
 
 EASE = ".45 0 .55 1"          # one keySplines segment; join it with ";" once per interval of the animation
+# for a reader who has asked for less motion: css animations are dropped, so each thing rests in its finished state,
+# and what is only there to move (.mo: dust, leaves, petals, sparkles, the cursor) is put away.  Slow light and a
+# sprig's sway stay: svg's own <animate> can't be switched off from css, and they keep to their place
+CALM = "@media (prefers-reduced-motion:reduce){*{animation:none!important}.mo{display:none}}"
 
 
 def fontface(key):

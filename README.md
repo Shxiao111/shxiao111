@@ -39,7 +39,7 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/shxiao111/shxiao111/output/shelf-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/shxiao111/shxiao111/output/shelf-light.svg">
-  <img src="https://raw.githubusercontent.com/shxiao111/shxiao111/output/shelf-dark.svg" alt="languages as a bookshelf" width="100%">
+  <img src="https://raw.githubusercontent.com/shxiao111/shxiao111/output/shelf-dark.svg" alt="the repositories written in this year, as a bookshelf" width="100%">
 </picture>
 
 <picture>
@@ -83,5 +83,15 @@
   <source media="(prefers-color-scheme: light)" srcset="assets/footer-light.svg">
   <img src="assets/footer-dark.svg" alt="thanks for stopping by." width="100%">
 </picture>
+
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/shxiao111/shxiao111/output/colophon-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/shxiao111/shxiao111/output/colophon-light.svg">
+  <img src="https://raw.githubusercontent.com/shxiao111/shxiao111/output/colophon-dark.svg" alt="colophon: when this edition was printed, and what it is set in" width="100%">
+</picture>
+
+</div>
 
 <p align="right"><sub>art · 竹岡美穂「“文学少女”の追想画廊」 © 野村美月 / KADOKAWA</sub></p>
