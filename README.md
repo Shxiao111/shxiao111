@@ -10,13 +10,14 @@
 
 <div align="center">
 
-<a href="https://github.com/shxiao111?tab=repositories">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/shxiao111/shxiao111/output/toc-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/shxiao111/shxiao111/output/toc-light.svg">
-  <img src="https://raw.githubusercontent.com/shxiao111/shxiao111/output/toc-dark.svg" alt="Preface: a sophomore in Computer Science and Technology, a member of BYR Docs. She is Amano Tooko. As you can see, a literary girl. Contents: my repositories." width="100%">
+  <img src="https://raw.githubusercontent.com/shxiao111/shxiao111/output/toc-dark.svg" usemap="#toc" alt="Preface: a sophomore in Computer Science and Technology, a member of BYR Docs. She is Amano Tooko. As you can see, a literary girl. Contents: my repositories." width="100%">
 </picture>
-</a>
+<map name="toc">
+<!-- toc-areas -->
+</map>
 
 </div>
 
@@ -60,13 +61,14 @@
 
 <div align="center">
 
-<a href="https://github.com/shxiao111?tab=repositories">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/shxiao111/shxiao111/output/works-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/shxiao111/shxiao111/output/works-light.svg">
-  <img src="https://raw.githubusercontent.com/shxiao111/shxiao111/output/works-dark.svg" alt="Tooko holding a red book under a golden tree, beside a bookcase of pinned repositories as bunkobon, each wearing an obi" width="100%">
+  <img src="https://raw.githubusercontent.com/shxiao111/shxiao111/output/works-dark.svg" usemap="#works" alt="Tooko holding a red book under a golden tree, beside a bookcase of pinned repositories as bunkobon, each wearing an obi" width="100%">
 </picture>
-</a>
+<map name="works">
+<!-- works-areas -->
+</map>
 
 </div>
 

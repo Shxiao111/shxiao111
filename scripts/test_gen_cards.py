@@ -71,6 +71,8 @@ class CardTests(unittest.TestCase):
         self.assertEqual((d["prs"], d["issues"]), (3, 1))
         self.assertEqual([r["name"] for r in d["own"]][:2], ["tool", "x" * 80])
         self.assertEqual(d["works"], [])   # nothing pinned: an empty bookcase
+        gen_cards.toc_card("dark", d)
+        self.assertEqual([(o, n) for o, n, *_ in d["toc_hits"][:2]], [("shxiao111", "tool"), ("shxiao111", "x" * 80)])
         self.assertIn(">stars<", gen_cards.stats_panel("dark", d))
         self.assertNotIn(">stars<", gen_cards.stats_panel("dark", dict(d, stars=0)))   # a zero is left out
         self.render_all(d)
@@ -87,6 +89,12 @@ class CardTests(unittest.TestCase):
                          [("byrdocs-web", "byrdocs"), ("MyVeryLongCamelCaseRepositoryNameThatKeepsGoing", "shxiao111")])
         self.assertEqual(d["works"][1]["lang"], "")   # Shell alone doesn't colour a cover
         self.render_all(d)
+        gen_cards.works_card("dark", d)
+        self.assertEqual([(o, n) for o, n, *_ in d["works_hits"]],
+                         [("byrdocs", "byrdocs-web"), ("shxiao111", "MyVeryLongCamelCaseRepositoryNameThatKeepsGoing")])
+        areas = gen_cards.area_html(d["works_hits"])
+        self.assertIn('href="https://github.com/byrdocs/byrdocs-web"', areas)
+        self.assertIn('href="https://github.com/byrdocs/byrdocs-web"', gen_cards.splice_readme("<!-- works-areas -->", "", areas))
 
     def test_bookcase_shelves(self):
         """The bookcase always has two shelves, the top one taking the odd volume; the card keeps the other cards'
@@ -195,12 +203,14 @@ class CardTests(unittest.TestCase):
         repos = [repo("tool", "a tool", "2026-09-01", [("Rust", 5000, "#dea584"), ("Python", 900, "#3572A5")], 5)]
         with tempfile.TemporaryDirectory() as out, mock.patch.object(gen_cards, "OUT", out),                 mock.patch.object(gen_cards, "gql", fake_gql(repos, [])), contextlib.redirect_stdout(io.StringIO()):
             gen_cards.main()
-            names = sorted(os.listdir(out))
+            names = sorted(n for n in os.listdir(out) if n.endswith(".svg"))
             self.assertEqual(names, sorted(f"{n}-{t}.svg" for n in ("stats", "shelf", "toc", "works")
                                            for t in ("dark", "light")))
             for n in names:
                 with open(os.path.join(out, n), encoding="utf-8") as fh:
                     ET.fromstring(fh.read())
+            with open(os.path.join(out, "toc-areas.html"), encoding="utf-8") as fh:
+                self.assertIn('href="https://github.com/shxiao111/tool"', fh.read())
 
     def test_all_days_chunking(self):
         """all_days chunks multi-year queries into batches of at most chunk_size."""

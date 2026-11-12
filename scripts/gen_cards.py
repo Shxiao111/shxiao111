@@ -223,7 +223,8 @@ def collect():
         "active_days": sum(1 for _, c in days if c > 0),
         "days_count": len(days),
         "langs": top,
-        "own": [{"name": r["name"], "pushed": dt.date.fromisoformat(r["pushedAt"][:10]),
+        "own": [{"name": r["name"], "owner": r["owner"]["login"],
+                 "pushed": dt.date.fromisoformat(r["pushedAt"][:10]),
                  "desc": " ".join((r["description"] or "").split()),
                  "langs": [e["node"]["name"] for e in r["languages"]["edges"] if e["node"]["name"] not in SKIP_LANGS]}
                 for r in own],
@@ -964,7 +965,7 @@ def toc_card(theme, d):
     chapters = []
     for r in d["own"][:4]:
         about = [r["langs"][0], r["desc"]] if r["desc"] and r["langs"] else [r["desc"] or ", ".join(r["langs"][:3])]
-        chapters.append((r["name"], when(r["pushed"]), "  ·  ".join(a for a in about if a)))
+        chapters.append((r["name"], r["owner"], when(r["pushed"]), "  ·  ".join(a for a in about if a)))
     Y0, PITCH = 168, 58
     (lx0, lx1), (rx0, rx1) = (96, 552), (648, 1104)
     preface, preface_clips, preface_end = preface_page(p, lx0, lx1, Y0, .3)
@@ -982,11 +983,14 @@ def toc_card(theme, d):
     if not chapters:
         body.append(f'<text x="{rx0 + 36}" y="{Y0}" class="h" font-size="24" fill="{p["muted"]}">blank pages, for now</text>')
     latest = None
-    for j, (name, value, sub) in enumerate(chapters):
+    hits = []
+    for j, (name, owner, value, sub) in enumerate(chapters):
         y = Y0 + j * PITCH
         entry, nx, nw = toc_entry(p, rx0, rx1, y, j, name, value, sub, .5 + j * .18)
         body.append(entry)
+        hits.append((owner, name, rx0, y - 36, rx1 - rx0, 52))
         latest = latest or (nx, nw, y)
+    d["toc_hits"] = hits
     underline = ""
     if latest:   # a red-pencil underline under the latest chapter, once the contents are written
         nx, nw, y = latest
@@ -1226,7 +1230,7 @@ def bookcase(p, d, rows, light=""):
 
     at = 1 - .3 * (1 - DEPTH)    # the books stand a third of the way back
     wood1, b0, b1 = p["wood1"], p["back0"], p["back1"]
-    clips, body = [], []
+    clips, body, hits = [], [], []
     for t, row in enumerate(rows):
         x0, x1, y0, yf = side, W - side, crown + t * tier, crown + t * tier + head + ch
         (bx0, by0), (bx1, byf) = back(x0, y0), back(x1, yf)
@@ -1276,6 +1280,7 @@ def bookcase(p, d, rows, light=""):
 
             books.append(f'<g transform="translate({bx:.1f} {by:.1f}) scale({at:.4f})">{book_stand}'
                          f'<g class="cv" style="animation-delay:{.2 + i * .15:.2f}s"{tilt_tf}>{art}</g></g>')
+            hits.append((v["owner"], v["name"], bx, by, cw * at, ch * at))
             x += cw + gap
         if not vols and t == 0:
             books.append(f'<text x="{W / 2}" y="{yf - ch / 2:.0f}" text-anchor="middle" class="h" font-size="28" '
@@ -1317,7 +1322,7 @@ def bookcase(p, d, rows, light=""):
              f'{crown_molding}'
              f'{plinth_base}'
              f'<rect x=".5" y=".5" width="{W - 1}" height="{H - 1}" rx="2" fill="none" stroke="{p["woodLine"]}" stroke-opacity=".5"/>')
-    return "".join(clips), "".join(body) + frame, W, H
+    return "".join(clips), "".join(body) + frame, W, H, hits
 
 
 def works_card(theme, d):
@@ -1336,7 +1341,7 @@ def works_card(theme, d):
     rnd = random.Random(21)
     # clean and serene interior without muddy dappled shade
     light = ""
-    case_defs, case, cw, chh = bookcase(pw, d, rows, light)
+    case_defs, case, cw, chh, hits = bookcase(pw, d, rows, light)
     W, M = WORKS_W, WORKS_M
     H = chh + 2 * M
     cx, cy = W - M - cw, M
@@ -1357,6 +1362,7 @@ def works_card(theme, d):
            "@keyframes up{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}"
            ".cv{animation:up .8s cubic-bezier(.3,.7,.4,1) both}"
            "@keyframes late{from{opacity:0}to{opacity:1}}.late{animation:late .8s ease both}")
+    d["works_hits"] = [(o, n, cx + x, cy + y, w, h) for o, n, x, y, w, h in hits]
     label = esc(f"works in progress: Tooko holding a book beside a bookcase of {len(vols)} pinned repositories: "
                 f"{', '.join(v['name'] for v in vols) or 'none yet'}")
     wood0, wood1, b0, b1 = pw["wood0"], pw["wood1"], pw["back0"], pw["back1"]
@@ -1455,6 +1461,21 @@ def wrap_snake(d):
         print(f"framed {path} ({os.path.getsize(path)//1024} KB)")
 
 
+def area_html(hits):
+    """Image-map areas for one card. GitHub shows the SVG through an img, which does not follow links drawn
+    inside the file, so each repository is a rectangle in the README instead."""
+    lines = []
+    for owner, name, x, y, w, h in hits:
+        href = html.escape(f"https://github.com/{owner}/{name}", quote=True)
+        lines.append(f'<area alt="{esc(name)}" href="{href}" shape="rect" '
+                     f'coords="{round(x)},{round(y)},{round(x + w)},{round(y + h)}">')
+    return "\n".join(lines)
+
+
+def splice_readme(text, toc_areas, works_areas):
+    return text.replace("<!-- toc-areas -->", toc_areas).replace("<!-- works-areas -->", works_areas)
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     d = collect()
@@ -1468,6 +1489,10 @@ def main():
                 svg = punch(svg, theme == "dark", side="right" if name == "shelf" else "left")
             write_svg(path, svg)
             print(f"wrote {path} ({os.path.getsize(path)//1024} KB)")
+    for kind in ("toc", "works"):
+        path = os.path.join(OUT, f"{kind}-areas.html")
+        with open(path, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(area_html(d.get(f"{kind}_hits", [])))
     print(json.dumps(d, ensure_ascii=False, default=str))
 
 
