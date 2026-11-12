@@ -14,7 +14,7 @@ from paper import punch
 from sunlight import halo
 
 # ---- text ----------------------------------------------------------------------------------------
-NAME = "Shxiao101"
+NAME = "shxiao111"
 GREETING = "hi there, i'm"
 TAGLINE = "code, books, and quiet afternoons"
 PILLS = ["BYR Docs", "computer science", "always reading"]

@@ -38,7 +38,7 @@ def fake_gql(repos, commits, pinned=()):
     return gql
 
 
-def repo(name, desc, pushed, langs, stars=0, owner="Shxiao101", private=False):
+def repo(name, desc, pushed, langs, stars=0, owner="shxiao111", private=False):
     return {"name": name, "description": desc, "pushedAt": f"{pushed}T00:00:00Z", "stargazerCount": stars,
             "forkCount": 1, "owner": {"login": owner}, "isPrivate": private,
             "languages": {"edges": [{"size": s, "node": {"name": n, "color": c}} for n, s, c in langs]}}
@@ -56,7 +56,7 @@ class CardTests(unittest.TestCase):
                     ET.fromstring(punch(svg, theme == "dark"))
 
     def test_full_profile(self):
-        repos = [repo("Shxiao101", "profile", "2026-09-20", [("Python", 900, "#3572A5")], 3),
+        repos = [repo("shxiao111", "profile", "2026-09-20", [("Python", 900, "#3572A5")], 3),
                  repo("tool", "a <small> & sharp tool", "2026-09-01", [("Rust", 5000, "#dea584"), ("Shell", 50, None)], 5),
                  repo("notes", None, "2025-03-02", [("Jupyter Notebook", 3000, None)]),
                  repo("x" * 80, "  spaced \n out  ", "2026-01-01", [("TypeScript", 800, "#3178c6"), ("Vue", 200, "#41b883")]),
@@ -82,7 +82,7 @@ class CardTests(unittest.TestCase):
         with mock.patch.object(gen_cards, "gql", fake_gql([], [], pinned)):
             d = gen_cards.collect()
         self.assertEqual([(v["name"], v["owner"]) for v in d["works"]],
-                         [("byrdocs-web", "byrdocs"), ("MyVeryLongCamelCaseRepositoryNameThatKeepsGoing", "Shxiao101")])
+                         [("byrdocs-web", "byrdocs"), ("MyVeryLongCamelCaseRepositoryNameThatKeepsGoing", "shxiao111")])
         self.assertEqual(d["works"][1]["lang"], "")   # Shell alone doesn't colour a cover
         self.render_all(d)
 

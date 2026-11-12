@@ -33,7 +33,7 @@ from sunlight import light_rays
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 OUT = os.path.join(ROOT, "dist")
-LOGIN = os.environ.get("GH_LOGIN", "Shxiao101")
+LOGIN = os.environ.get("GH_LOGIN", "shxiao111")
 TOKEN = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
 
 # ---- the preface: the left page of the book card, beside the contents -----------------------------
