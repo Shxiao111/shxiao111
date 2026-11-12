@@ -59,9 +59,7 @@ jobs:
         run: |
           sed -E 's#https://raw\.githubusercontent\.com/[^/"]+/[^/"]+/output/##g' README.md > dist/README.md
           cp -r assets dist/assets
-          printf '
-<sub>preview of <code>%s</code> at %s</sub>
-' "$GITHUB_REF_NAME" "${GITHUB_SHA::7}" >> dist/README.md
+          printf '\n<sub>preview of <code>%s</code> at %s</sub>\n' "$GITHUB_REF_NAME" "${GITHUB_SHA::7}" >> dist/README.md
 
       - name: publish to the output branch, or off main to the preview branch
         uses: crazy-max/ghaction-github-pages@df5cc2bfa78282ded844b354faee141f06b41865 # v4.2.0
