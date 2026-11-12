@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate assets/hero-*.svg, divider-*.svg and footer-*.svg.
+"""Regenerate assets/hero-*.svg, chapter-*.svg and footer-*.svg.
 
 Usage:  python scripts/gen_hero.py      (needs fontTools + brotli for text measuring)
 Fonts come from scripts/fonts.json (Google Fonts subsets), the art from scripts/{hero,footer}.jpg
@@ -20,6 +20,7 @@ TAGLINE = "code, books, and quiet afternoons"
 PILLS = ["BYR Docs", "computer science", "always reading"]
 FOOT_LINE = "thanks for stopping by"
 FOOT_SUB = "Shxiao  ·  Amano Tooko"
+CHAPTERS = ["Chapter I · The Story So Far", "Chapter II · Stories Yet Unfolding", "Afterword"]   # " · " splits a title
 # --------------------------------------------------------------------------------------------------
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -162,18 +163,21 @@ def reveal(clip_id, x, y, h, full_w, strokes, pad_l, pad_r):
     return (f'<clipPath id="{clip_id}"><rect x="{x - pad_l}" y="{y}" width="{pad_l + full_w + pad_r:.1f}" height="{h}">'
             f'<set attributeName="width" to="0" begin="0s" fill="freeze"/>{sets}</rect></clipPath>')
 
-def handwriting(text, x, baseline, size, color, start):
+def handwriting(text, x, baseline, size, color, start=None):
     """Each Caveat glyph as an outline that is traced like a pen stroke, then inked in.
-    Base attributes are the finished glyph (static fallback); the 0s sets blank it before the pen arrives."""
+    Base attributes are the finished glyph (static fallback); the 0s sets blank it before the pen arrives.
+    Without `start` the glyphs are simply written out: nobody is watching a title further down the page."""
     f = ttf("caveat"); glyphs = f.getGlyphSet(); cmap = f.getBestCmap(); hmtx = f["hmtx"]
     k = size / f["head"].unitsPerEm
     out, pen_x = [], x
     for ch in text:
         if ord(ch) not in cmap:
-            raise SystemExit(f"{ch!r} in TAGLINE is not in the Caveat subset in fonts.json")
+            raise SystemExit(f"{ch!r} in {text!r} is not in the Caveat subset in fonts.json")
         name = cmap[ord(ch)]
         pen = SVGPathPen(glyphs); glyphs[name].draw(pen); d = pen.getCommands()
-        if d:
+        if d and start is None:
+            out.append(f'<path transform="translate({pen_x:.1f} {baseline}) scale({k:.5f} {-k:.5f})" d="{d}" fill="{color}"/>')
+        elif d:
             t = start + (pen_x - x) / WRITE_SPEED
             draw = max(.28, hmtx[name][0] * k / WRITE_SPEED * 2.2)
             out.append(
@@ -272,19 +276,41 @@ def hero(theme):
 </svg>
 '''
 
-def divider(theme):
+def chapter(theme, title):
+    """A chapter opener: the title hand-written between two rules that fade out to the page's edges, a slowly
+    turning star at the inner end of each.  The Caveat subset has no middle dot, so the one between the parts of a
+    title is drawn; the part before it is inked in the accent colour."""
     c1 = "#e4cf5a" if theme == "dark" else "#a8841a"
     c2 = "#a0a741" if theme == "dark" else "#6f7a1a"
-    # the gradient is laid out in user space: a horizontal line's bounding box has no height, and a gradient sized
+    size, base, mid, dot_gap, pad = 44, 47, 34, 34, 36
+    parts = title.split(" · ")
+    w = sum(width("caveat", t, size) for t in parts) + dot_gap * (len(parts) - 1)
+    x0, x1 = 600 - w / 2 - pad, 600 + w / 2 + pad
+    if x0 < 140:
+        raise SystemExit(f"{title!r} is too wide for a chapter opener ({w:.0f}px)")
+    ink, x = [], x0 + pad
+    for k, t in enumerate(parts):
+        if k:
+            ink.append(f'<circle cx="{x - dot_gap / 2:.1f}" cy="{base - 11}" r="2.6" fill="{c1}"/>')
+        ink.append(handwriting(t, x, base, size, PAL[theme]["tag"] if k == len(parts) - 1 else c1))
+        x += width("caveat", t, size) + dot_gap
+    turn = '<animateTransform attributeName="transform" type="rotate" values="0;90" dur="6s" repeatCount="indefinite"/>'
+    label, ink = esc(title), "\n".join(ink)
+    # the gradients are laid out in user space: a horizontal line's bounding box has no height, and a gradient sized
     # to such a box isn't painted at all, so the line would vanish
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 28" width="1200" height="28">
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 68" width="1200" height="68" role="img" aria-label="{label}">
+<title>{label}</title>
 <defs>
-<linearGradient id="g" gradientUnits="userSpaceOnUse" x1="60" y1="0" x2="1140" y2="0"><stop offset="0" stop-color="{c1}" stop-opacity="0"/><stop offset=".5" stop-color="{c1}" stop-opacity=".9"/><stop offset="1" stop-color="{c2}" stop-opacity="0"/></linearGradient>
+<linearGradient id="l" gradientUnits="userSpaceOnUse" x1="60" y1="0" x2="{x0:.1f}" y2="0"><stop offset="0" stop-color="{c1}" stop-opacity="0"/><stop offset="1" stop-color="{c1}" stop-opacity=".9"/></linearGradient>
+<linearGradient id="r" gradientUnits="userSpaceOnUse" x1="{x1:.1f}" y1="0" x2="1140" y2="0"><stop offset="0" stop-color="{c1}" stop-opacity=".9"/><stop offset="1" stop-color="{c2}" stop-opacity="0"/></linearGradient>
 </defs>
-<line x1="60" y1="14" x2="1140" y2="14" stroke="url(#g)" stroke-width="1.5"/>
-<g transform="translate(600 14)"><path d="{star(7)}" fill="{c1}"><animateTransform attributeName="transform" type="rotate" values="0;90" dur="6s" repeatCount="indefinite"/></path></g>
+<line x1="60" y1="{mid}" x2="{x0 - 12:.1f}" y2="{mid}" stroke="url(#l)" stroke-width="1.5"/>
+<line x1="{x1 + 12:.1f}" y1="{mid}" x2="1140" y2="{mid}" stroke="url(#r)" stroke-width="1.5"/>
+<g transform="translate({x0:.1f} {mid})"><path d="{star(7)}" fill="{c1}">{turn}</path></g>
+<g transform="translate({x1:.1f} {mid})"><path d="{star(7)}" fill="{c1}">{turn}</path></g>
+{ink}
 </svg>
-'''
+"""
 
 SWING = f"{EASE};{EASE}"          # keySplines for a there-and-back animation (values a;b;a)
 
@@ -437,11 +463,12 @@ def footer(theme):
 def main():
     os.makedirs(OUT, exist_ok=True)
     for theme in ("dark", "light"):
-        for name, fn in (("hero", hero), ("divider", divider), ("footer", footer)):
+        # the hero's art sits on the left, so its binder holes go down the right edge; a chapter opener is a rule,
+        # and the footer is the last page, torn loose from the binder
+        pages = [("hero", punch(hero(theme), theme == "dark", side="right")), ("footer", footer(theme))]
+        pages += [(f"chapter-{i}", chapter(theme, t)) for i, t in enumerate(CHAPTERS, 1)]
+        for name, svg in pages:
             path = os.path.join(OUT, f"{name}-{theme}.svg")
-            # the hero's art sits on the left, so its binder holes go down the right edge; the divider is a rule, and
-            # the footer is the last page, torn loose from the binder
-            svg = punch(fn(theme), theme == "dark", side="right") if name == "hero" else fn(theme)
             write_svg(path, svg)
             print(f"{path}: {os.path.getsize(path)/1024:.0f} KB")
 

@@ -258,6 +258,8 @@ PAL = {
         nextPage="#221e13", flap0="#0e0d08", flap1="#5c5238", flap2="#39321f", flap3="#282316", curlShadeO=".5", blossom="#f2a2b5",
         # works-in-progress bookcase: the bunkobon jackets and the case's back panel
         glintO=".16",
+        # the bookcase card is all picture and gold, with no dark panel beside it: at dusk it takes a deeper curve
+        worksTone=dict(toneR="0 .28 .66", toneG="0 .20 .49", toneB="0 .12 .32"),
         paper="#efe6cf", ink="#2b2418", inkMuted="#6d604a", coverDim=".1", back0="#2b1e13", back1="#1a120b"),
     "light": dict(
         bg0="#fffdf3", bg1="#f8f2d8", border="#e6dcae",
@@ -439,6 +441,7 @@ def stats_panel(theme, d):
     body.append('<line x1="56" y1="262" x2="636" y2="262" stroke="url(#pline)" stroke-width="1.2"/>')
     rows = [("star", "stars", d["stars"]), ("commit", "commits · 1y", d["commits"]),
             ("pr", "pull requests", d["prs"]), ("issue", "issues", d["issues"]), ("repo", "repos", d["repos"])]
+    rows = [r for r in rows if r[2]]   # a bare 0 says nothing: the others close up over it
     for i, (ic, label, val) in enumerate(rows):
         x = 56 + i * 118
         body.append(f'<g transform="translate({x+7} 300)" fill="{p["accent"]}" stroke="{p["accent"]}" stroke-linecap="round" stroke-linejoin="round">{ICON[ic]}</g>')
@@ -1322,7 +1325,7 @@ def works_card(theme, d):
     two-shelf bookcase of the pinned repositories as bunkobon - the top shelf takes the odd one, and the case is two
     or three books wide - with white petals drifting down across both.  The books keep their full size, so their
     print stays legible."""
-    p = PAL[theme]
+    p = dict(PAL[theme], **PAL[theme].get("worksTone", {}))
     vols = d["works"]
     half = (len(vols) + 1) // 2
     rows = [vols[:half], vols[half:]]
@@ -1412,6 +1415,7 @@ def works_card(theme, d):
 
 def snake_card(theme, raw, d):
     """The contributions card: snk's svg nested in a card like the others, scaled up to 16px cells on a 20px pitch.
+    In a book the snake is a bookworm, eating its way through the year's pages, so that is what the card is called.
     No total in the header: the stats panel already gives the all-time one, and a 12-month total beside it never
     quite agrees.  Only fonts and .t/.m go in the style block; snk's own css uses .c/.s/.u."""
     p = PAL[theme]
@@ -1431,7 +1435,7 @@ def snake_card(theme, raw, d):
             f'</defs>'
             f'<rect x="0.75" y="0.75" width="{W-1.5}" height="{H-1.5}" rx="16" fill="url(#bgN)" stroke="{p["border"]}" stroke-width="1.5"/>'
             f'<g transform="translate(58 34)" fill="{p["accent"]}">{ICON["star"]}</g>'
-            f'<text x="76" y="40" class="t" font-size="19" fill="url(#tgN)">contributions</text>'
+            f'<text x="76" y="40" class="t" font-size="19" fill="url(#tgN)">the bookworm</text>'
             f'<text x="{W-gx}" y="40" class="m" font-size="12" text-anchor="end" fill="{p["label"]}">{d["active_days"]} active days · last 12 months</text>'
             f'<svg x="{gx + vx*scale:.1f}" y="{gy + vy*scale:.1f}" width="{vw*scale:.1f}" height="{vh*scale:.1f}" viewBox="{vb}">{inner}</svg>'
             f'</svg>')

@@ -71,6 +71,8 @@ class CardTests(unittest.TestCase):
         self.assertEqual((d["prs"], d["issues"]), (3, 1))
         self.assertEqual([r["name"] for r in d["own"]][:2], ["tool", "x" * 80])
         self.assertEqual(d["works"], [])   # nothing pinned: an empty bookcase
+        self.assertIn(">stars<", gen_cards.stats_panel("dark", d))
+        self.assertNotIn(">stars<", gen_cards.stats_panel("dark", dict(d, stars=0)))   # a zero is left out
         self.render_all(d)
 
     def test_pinned(self):
@@ -150,7 +152,7 @@ class CardTests(unittest.TestCase):
                 self.assertEqual(fh.read(), framed)
             self.assertFalse(os.path.exists(os.path.join(out, "snake-light.svg")))
         ET.fromstring(framed)
-        self.assertIn(">contributions<", framed)
+        self.assertIn(">the bookworm<", framed)
         self.assertIn("42 active days · last 12 months", framed)
 
     def test_shelf_many_languages(self):
