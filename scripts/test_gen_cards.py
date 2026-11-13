@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 from unittest import mock
 
 import gen_cards
-from common import SEASON, SEASONS
+from common import SEASON, SEASONS, season_of
 from gen_cards import streaks
 from paper import punch
 
@@ -163,6 +163,10 @@ class CardTests(unittest.TestCase):
         # snk is asked for autumn's colours (cards.yml); the card wears the season's
         self.assertIn(f"--c1:{gen_cards.PAL['dark']['snake'][2]}", framed)
         self.assertIn("42 active days · last 12 months", framed)
+
+    def test_season_follows_the_calendar(self):
+        self.assertEqual([season_of(m) for m in (1, 10, 12)], ["winter", "autumn", "winter"])
+        self.assertLessEqual({season_of(m) for m in range(1, 13)}, set(SEASONS))   # every month has a drawn theme
 
     @unittest.skipIf(os.environ.get("SEASON_RERUN"), "already inside a season's own run")
     def test_other_seasons(self):
