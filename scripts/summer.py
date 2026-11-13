@@ -2,12 +2,17 @@
 and the hibiscus on the sprig in the bookshelf's vase (gen_cards.py) - spring's petal, and the plum's five petals
 grown broad; and, where autumn has shafts of sun, the light the sea throws up (water_light).  Standard library only.
 """
-from spring import BLOSSOM_STALK, petal_def   # the same petal, and the same hold on its twig
+from spring import BLOSSOM_PETAL, BLOSSOM_STALK   # the petal's plain shape, and the same hold on its twig
 from sunlight import shifting_light
 from winter import plum_def
 
 # the pink and the red of the two hibiscus in pictures/summer/1.jpg
 PETAL_COLORS = ["#ee5f8a", "#f781a4", "#e1605f", "#f59ab4", "#d9485a"]
+
+
+def petal_def(id_="leaf"):
+    """One fallen petal, ~16 units long (a maple leaf's size), its middle on the origin."""
+    return f'<g id="{id_}" stroke="none"><path transform="translate(0 8.2) scale(2)" d="{BLOSSOM_PETAL}"/></g>'
 
 
 def hibiscus_def(id_="leaf"):
