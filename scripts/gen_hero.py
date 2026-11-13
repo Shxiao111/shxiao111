@@ -11,8 +11,10 @@ from fontTools.ttLib import TTFont
 from common import CALM, EASE, FONTS as fonts, SEASON, art, esc, fontface, smooth_fade, star_path as star, write_svg
 from paper import RIM, punch
 from sunlight import halo
-if SEASON == "winter":       # what falls across the last page: maple leaves, or snow
+if SEASON == "winter":       # what falls across the last page: maple leaves, snow, or cherry petals
     from winter import FLAKE_COLORS as LEAF_COLORS, flake_def as leaf_def
+elif SEASON == "spring":
+    from spring import PETAL_COLORS as LEAF_COLORS, petal_def as leaf_def
 else:
     from maple import LEAF_COLORS, leaf_def
 
@@ -28,7 +30,7 @@ CHAPTERS = ["Chapter I · The Story So Far", "Chapter II · Stories Yet Unfoldin
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(os.path.dirname(HERE), "assets")
-hero_b64, foot_b64, tree_b64 = art("hero"), art("footer"), art("tree")   # only winter has a tree
+hero_b64, foot_b64, tree_b64 = art("hero"), art("footer"), art("tree")   # autumn has no tree
 
 _ttf = {}
 def ttf(key):
@@ -108,10 +110,47 @@ WINTER = {
    # on white paper the tree keeps its colours; only its white ground is let go
    frost="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  -.36 -1.22 -.12 0 1.64", treeO=".9"),
 }
-PAL = {"autumn": AUTUMN, "winter": WINTER}[SEASON]
+
+# Spring, from pictures/spring: new-leaf green on a wood at night or on white paper, cherry pink beside it.
+SPRING = {
+ "dark": dict(
+   bg0="#0f1610", bg1="#171e0e", bg2="#0b1716",
+   blob1="#6fa82a", blob2="#f2a2b8", blob3="#2a6f6a", blob4="#cfe07a",
+   blob1o=".34", blob2o=".14", blob3o=".34", blob4o=".12",
+   name0="#ffffff", name1="#eefad0", name2="#b4dc5a", nameGlow="#7fb52e", glowO=".55",
+   over="#bfe070", tag="#eef7d6",
+   pillStroke="#94b84e", pillFill="#7fb52e", pillFillO=".14", pillText="#e4f3bf",
+   dust="#f3ffd0", dustO="1", spark="#ffe3ec",
+   border="#cfe69a", borderO=".20", grainO=".045", cursor="#b4dc5a", imgBottom=".35",
+   imgTint="0.93 0 0 0 0  0 0.95 0 0 0  0 0 0.88 0 0  0 0 0 1 0",
+   footText="#f1f9dc", footMono="#9fb07a",
+   footGlow="#5f9a2a", footGlowO=".20", footToneR="0 .47 .79", footToneG="0 .54 .86", footToneB="0 .40 .69",
+   chap2="#f29bb5", mottle="#000", edge=RIM,
+   # the cherry is a breath off white, and lost on a night page: there it is one pale pink, as dense as it was
+   # dark, and a little out of focus, so the specks of light in its blossom don't read as holes
+   frost="0 0 0 0 1  0 0 0 0 .76  0 0 0 0 .86  -1.69 -5.74 -.57 0 7.9", treeO=".6",
+   treeSoft='<feGaussianBlur stdDeviation="1.6"/>'),
+ "light": dict(
+   bg0="#fcfff5", bg1="#f3f9dc", bg2="#eaf5ea",
+   blob1="#d6ec8c", blob2="#fbd3df", blob3="#c8e6d0", blob4="#e9f5a8",
+   blob1o=".55", blob2o=".60", blob3o=".55", blob4o=".70",
+   name0="#1f3210", name1="#3a5c14", name2="#6a9a1c", nameGlow="#d6ec8c", glowO=".75",
+   over="#4d7412", tag="#324d14",
+   pillStroke="#a3c452", pillFill="#7fb52e", pillFillO=".10", pillText="#3f5f12",
+   dust="#b5d44a", dustO=".55", spark="#e0809a",
+   border="#5f8a1a", borderO=".18", grainO=".03", cursor="#6a9a1c", imgBottom=".55",
+   imgTint="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0",
+   footText="#1f3210", footMono="#7a8a55",
+   footGlow="#e3f2a8", footGlowO=".45", footToneR="0 1", footToneG="0 1", footToneB="0 1",
+   chap2="#d9627f", mottle="#7a9a4a", edge="#b9c98c",
+   # on white paper its colours are kept but deepened, three times the paint, and its white ground let go
+   frost="3 0 0 0 -2  0 3 0 0 -2  0 0 3 0 -2  -1.69 -5.74 -.57 0 7.9", treeO=".9"),
+}
+PAL = {"autumn": AUTUMN, "winter": WINTER, "spring": SPRING}[SEASON]
 # where the footer's picture sits: its width (pinned to the left edge, 380 high) and how far back from its right
-# edge it starts to fade - winter's girl is right of the middle of her picture, so it stays whole until past her face
-FOOT_W, FOOT_FADE = {"autumn": (485, 330), "winter": (520, 125)}[SEASON]
+# edge it starts to fade - winter's girl is right of the middle of her picture, so it stays whole until past her
+# face, and spring's is two girls, the second on the right
+FOOT_W, FOOT_FADE = {"autumn": (485, 330), "winter": (520, 125), "spring": (600, 130)}[SEASON]
 
 FADE_OUT = smooth_fade()
 
@@ -354,7 +393,7 @@ def chapter(theme, title):
 SWING = f"{EASE};{EASE}"          # keySplines for a there-and-back animation (values a;b;a)
 
 def leaves(w, h, seed=21):
-    """Maple leaves (in winter, snow crystals) drifting down: each one falls, sways side to side, rocks with the
+    """Maple leaves (in winter snow crystals, in spring cherry petals) drifting down: each one falls, sways side to side, rocks with the
     sway and flips over.
     Three depths - small faint far leaves, mid leaves, and a few big soft-focus ones up close."""
     rnd = random.Random(seed)
@@ -428,18 +467,31 @@ def paper_sheet(x0, y0, x1, y1, depth=.38, seed=101):
     outline = "M" + " L".join(f"{x:.1f},{y:.1f}" for x, y in pts) + " Z"
     return outline, line(rip), line(inner), line(rip + inner[::-1])
 
-# the lights on the tree that twinkle: (x, y) as fractions of tree.jpg, picked off its brightest bulbs
-TREE_LIGHTS = [(.50, .31), (.53, .41), (.46, .52), (.36, .60), (.50, .66), (.57, .69), (.77, .55), (.76, .77),
-               (.60, .47), (.33, .82), (.54, .86), (.88, .38), (.21, .70), (.70, .90)]
+# the lights on the tree that twinkle: (x, y) as fractions of tree.jpg, picked off winter's brightest bulbs and
+# the light coming through spring's blossom
+TREE_LIGHTS = {
+    "winter": [(.50, .31), (.53, .41), (.46, .52), (.36, .60), (.50, .66), (.57, .69), (.77, .55), (.76, .77),
+               (.60, .47), (.33, .82), (.54, .86), (.88, .38), (.21, .70), (.70, .90)],
+    "spring": [(.22, .30), (.36, .16), (.47, .37), (.58, .12), (.66, .30), (.80, .20), (.88, .42), (.72, .52)],
+}.get(SEASON)
+# where it stands: its left edge and its size (winter's tree.jpg is 500x636, spring's 500x510)
+TREE_BOX = {"winter": (508, 250, 318), "spring": (462, 348, 354)}.get(SEASON)
 
-def lit_tree(p, x, foot, w=250, h=318):
-    """Winter's extra picture (tree.jpg, 500x636): the tree hung with lights, growing up from the foot of the last
-    page between the picture and the words.  Its white ground is turned to nothing (alpha from darkness, the
-    `frost` matrix), its tip fades in under where the passage above it was cut off, and its bulbs twinkle."""
+def lit_tree(p, x, w, h, foot):
+    """The season's extra picture (tree.jpg): winter's tree hung with lights, spring's cherry in bloom, growing up
+    from the foot of the last page between the picture and the words.  Its white ground is turned to nothing
+    (alpha from darkness, the `frost` matrix) and its lights twinkle.  Winter's tip fades in under where the
+    passage above it was cut off; the cherry's blossom runs off its picture above and to the right, so it is
+    let out softly on every side but the foot (a blurred mask, 40px in from the picture's edges)."""
     y = foot - h
-    defs = (f'<filter id="frost" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="{p["frost"]}"/></filter>'
-            f'<linearGradient id="treeTop" gradientUnits="userSpaceOnUse" x1="0" y1="{y}" x2="0" y2="{y + 46}">{smooth_fade(fade_in=True)}</linearGradient>'
-            f'<mask id="treeMask"><rect x="{x}" y="{y}" width="{w}" height="{h}" fill="url(#treeTop)"/></mask>')
+    if SEASON == "spring":
+        fade = f'<filter id="treeTop" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="18"/></filter>'
+        hole = f'<rect x="{x + 40}" y="{y + 40}" width="{w - 80}" height="{h}" fill="#fff" filter="url(#treeTop)"/>'
+    else:
+        fade = f'<linearGradient id="treeTop" gradientUnits="userSpaceOnUse" x1="0" y1="{y}" x2="0" y2="{y + 46}">{smooth_fade(fade_in=True)}</linearGradient>'
+        hole = f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="url(#treeTop)"/>'
+    defs = (f'<filter id="frost" color-interpolation-filters="sRGB">{p.get("treeSoft", "")}<feColorMatrix type="matrix" values="{p["frost"]}"/></filter>'
+            f'{fade}<mask id="treeMask">{hole}</mask>')
     rnd = random.Random(5)
     lights = "".join(
         f'<g transform="translate({x + fx * w:.0f} {y + fy * h:.0f})"><path d="{star(rnd.uniform(3, 5.5))}" fill="{p["spark"]}">'
@@ -465,7 +517,7 @@ def footer(theme):
     edgeO, dropO = (".14", ".6") if dark else (".7", ".22")
     mottle, edge = p["mottle"], p["edge"]
     foot_label = esc(FOOT_LINE)
-    tree_defs, tree = lit_tree(p, 508, FH) if tree_b64 else ("", "")
+    tree_defs, tree = lit_tree(p, *TREE_BOX, FH) if tree_b64 else ("", "")
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {FW} {FH}" width="{FW}" height="{FH}" role="img" aria-label="{foot_label}">
 <title>{foot_label}</title>
 <defs>

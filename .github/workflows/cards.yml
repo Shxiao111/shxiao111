@@ -14,6 +14,7 @@ on:
       - "scripts/fonts.json"
       - "scripts/maple.py"
       - "scripts/winter.py"
+      - "scripts/spring.py"
       - "scripts/paper.py"
       - "scripts/sunlight.py"
 

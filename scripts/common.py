@@ -14,10 +14,10 @@ with open(os.path.join(HERE, "fonts.json"), encoding="utf-8") as fh:
 # the season in wear: its art (scripts/art/<season>/, see prep_images.py), palettes and falling things.  It follows
 # the calendar: cards.yml's daily run draws the cards in it and, when it turns, redraws and commits assets/ (which
 # check.yml compares byte for byte).  SEASON=winter in the environment previews one whatever the date
-SEASONS = ("autumn", "winter")
+SEASONS = ("autumn", "winter", "spring")
 MONTHS = "winter winter spring spring spring summer summer summer autumn autumn autumn winter".split()  # Jan..Dec
-# shortcut: spring and summer have no theme yet, so these stand in; add them to SEASONS once they are drawn
-STAND_IN = {"spring": "winter", "summer": "autumn"}
+# shortcut: summer has no theme yet, so autumn stands in; add it to SEASONS once it is drawn
+STAND_IN = {"summer": "autumn"}
 
 
 def season_of(month):

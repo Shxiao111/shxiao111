@@ -165,7 +165,7 @@ class CardTests(unittest.TestCase):
         self.assertIn("42 active days · last 12 months", framed)
 
     def test_season_follows_the_calendar(self):
-        self.assertEqual([season_of(m) for m in (1, 10, 12)], ["winter", "autumn", "winter"])
+        self.assertEqual([season_of(m) for m in (1, 4, 7, 10, 12)], ["winter", "spring", "autumn", "autumn", "winter"])
         self.assertLessEqual({season_of(m) for m in range(1, 13)}, set(SEASONS))   # every month has a drawn theme
 
     @unittest.skipIf(os.environ.get("SEASON_RERUN"), "already inside a season's own run")
