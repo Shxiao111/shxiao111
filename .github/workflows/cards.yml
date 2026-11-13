@@ -69,3 +69,16 @@ jobs:
           build_dir: dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # the season follows the calendar (common.py) and the hero, chapter and footer pages are committed: when it
+      # turns, redraw them and commit, so the profile changes with the cards and check.yml's comparison stays true
+      - name: redraw the static pages when the season turns
+        if: github.ref_name == 'main'
+        run: |
+          python -m pip install -q -r scripts/requirements.txt
+          python scripts/gen_hero.py
+          git diff --quiet -- assets/ && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: the season turns" -- assets/
+          git push origin HEAD:main

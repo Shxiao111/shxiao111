@@ -5,16 +5,28 @@ import base64
 import html
 import json
 import os
+from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(HERE, "fonts.json"), encoding="utf-8") as fh:
     FONTS = json.load(fh)
 
-# the season in wear: its art (scripts/art/<season>/, see prep_images.py), palettes and falling things.  To change
-# it, edit the default here, run gen_hero.py and commit assets/ (check.yml compares them byte for byte, so the
-# season can't follow the calendar by itself); SEASON=winter in the environment previews one without editing
+# the season in wear: its art (scripts/art/<season>/, see prep_images.py), palettes and falling things.  It follows
+# the calendar: cards.yml's daily run draws the cards in it and, when it turns, redraws and commits assets/ (which
+# check.yml compares byte for byte).  SEASON=winter in the environment previews one whatever the date
 SEASONS = ("autumn", "winter")
-SEASON = os.environ.get("SEASON") or "autumn"
+MONTHS = "winter winter spring spring spring summer summer summer autumn autumn autumn winter".split()  # Jan..Dec
+# shortcut: spring and summer have no theme yet, so these stand in; add them to SEASONS once they are drawn
+STAND_IN = {"spring": "winter", "summer": "autumn"}
+
+
+def season_of(month):
+    season = MONTHS[month - 1]
+    return season if season in SEASONS else STAND_IN[season]
+
+
+# the month by UTC, so a run at home agrees with CI's
+SEASON = os.environ.get("SEASON") or season_of(datetime.now(timezone.utc).month)
 if SEASON not in SEASONS:
     raise SystemExit(f"SEASON={SEASON!r}: no such season, pick one of {', '.join(SEASONS)}")
 
