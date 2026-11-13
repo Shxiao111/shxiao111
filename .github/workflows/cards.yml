@@ -15,6 +15,7 @@ on:
       - "scripts/maple.py"
       - "scripts/winter.py"
       - "scripts/spring.py"
+      - "scripts/summer.py"
       - "scripts/paper.py"
       - "scripts/sunlight.py"
 

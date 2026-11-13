@@ -57,6 +57,11 @@ class CardTests(unittest.TestCase):
                     svg = fn(theme, d)
                     ET.fromstring(svg)
                     self.assertIn("prefers-reduced-motion", svg)
+                    # where the others have shafts of sun, summer wears the light off the sea (summer.water_light)
+                    # on the panel and the shelf, and the hero's halos on the works card
+                    self.assertEqual('<filter id="sea' in svg, SEASON == "summer" and fn in (gen_cards.stats_panel, gen_cards.shelf_card))
+                    self.assertEqual('<radialGradient id="sunWGlow"' in svg, SEASON == "summer" and fn is gen_cards.works_card)
+                    self.assertFalse(SEASON == "summer" and 'Soft"' in svg)
                     ET.fromstring(punch(svg, theme == "dark"))
 
     def test_full_profile(self):
@@ -165,7 +170,7 @@ class CardTests(unittest.TestCase):
         self.assertIn("42 active days · last 12 months", framed)
 
     def test_season_follows_the_calendar(self):
-        self.assertEqual([season_of(m) for m in (1, 4, 7, 10, 12)], ["winter", "spring", "autumn", "autumn", "winter"])
+        self.assertEqual([season_of(m) for m in (1, 4, 7, 10, 12)], ["winter", "spring", "summer", "autumn", "winter"])
         self.assertLessEqual({season_of(m) for m in range(1, 13)}, set(SEASONS))   # every month has a drawn theme
 
     @unittest.skipIf(os.environ.get("SEASON_RERUN"), "already inside a season's own run")
