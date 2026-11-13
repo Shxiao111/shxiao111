@@ -1,4 +1,5 @@
-"""Animated light for the cards: drifting shafts of light and shade (light_rays) or breathing halos (halo).
+"""Animated light for the cards: drifting shafts of light and shade (light_rays), breathing halos (halo), or light
+that never holds its shape (shifting_light: the sea's in summer, the leaves' in spring).
 
 Shafts: wide, blurred bands within a card all lean the same way and drift the same way, so nothing crosses.  Two
 cards stacked one above the other can share one set of shafts, so a single band runs on down over the seam between
@@ -13,7 +14,7 @@ Standard library only; imported by gen_hero.py and gen_cards.py.
 """
 import random
 
-from common import SEASON
+from common import EASE, SEASON
 
 # (dark theme, light theme) colours of the shafts and of the halos
 TINT = {"autumn": dict(ray=("#ffe9a8", "#fae288"), halo=("#ffe3a0", "#fffdf2")),
@@ -105,3 +106,39 @@ def halo(uid, glows, dark, strength=1):
             f'<g><animateTransform attributeName="transform" type="scale" {swell}/>'
             f'<circle r="{r}" fill="url(#{uid}Glow)"/>{ring_el}</g></g></g></g>')
     return defs, f'<g style="mix-blend-mode:{blend}">{"".join(body)}</g>'
+
+
+def shifting_light(uid, w, h, color, blend, opacity, keep, blur, clip, *fields, mid=.5):
+    """Light that never holds its shape, playing over a card.  Two fields of soft noise slide across each other,
+    and the light is drawn where the two of them together sit at the heights in `keep` - a place that wanders, joins
+    up and breaks as they slide - with a soft glow round it.
+    keep: which of 17 steps, across the heights within a twelfth of `mid`, are lit (8: `mid` itself).
+    blur: the light's own softness, and its glow's.
+    fields: two of (baseFrequency, seed, how far it slides (dx, dy), seconds there and back).
+    `clip`: a clipPath id, to keep the light off a card's rounded corners.
+    Returns (defs, body), like light_rays; `uid` keeps ids unique in the document."""
+    pad = 70                                  # the fields are drawn this far past the card, to slide within
+    r, g, b = (int(color[i:i + 2], 16) / 255 for i in (1, 3, 5))
+    box = f'x="{-pad}" y="{-pad}" width="{w + 2 * pad}" height="{h + 2 * pad}"'
+    fields = [(f"{uid}{k}", *f) for k, f in zip("AB", fields)]
+    defs = "".join(
+        f'<filter id="{fid}" {box} filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">'
+        f'<feTurbulence type="fractalNoise" baseFrequency="{freq}" numOctaves="2" seed="{s}"/>'
+        # the noise's alpha as an opaque grey (its colours are no use: they come premultiplied)
+        f'<feColorMatrix type="matrix" values="0 0 0 1 0  0 0 0 1 0  0 0 0 1 0  0 0 0 0 1"/></filter>'
+        for fid, freq, s, _, _ in fields)
+    # the two greys averaged (the second lies half-clear over the first), stretched about `mid`, and only the
+    # steps in `keep` kept: the table is 0 everywhere else
+    table = " ".join("1" if i in keep else "0" for i in range(17))
+    defs += (f'<filter id="{uid}N" x="0" y="0" width="{w}" height="{h}" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">'
+             f'<feColorMatrix type="matrix" values="0 0 0 0 {r:.3f}  0 0 0 0 {g:.3f}  0 0 0 0 {b:.3f}  6 0 0 0 {.5 - 6 * mid:g}"/>'
+             f'<feComponentTransfer><feFuncA type="table" tableValues="{table}"/></feComponentTransfer>'
+             f'<feGaussianBlur stdDeviation="{blur[0]}" result="line"/><feGaussianBlur stdDeviation="{blur[1]}"/>'
+             f'<feMerge><feMergeNode/><feMergeNode in="line"/></feMerge></filter>')
+    body = ""
+    for (fid, _, _, (dx, dy), dur), half in zip(fields, ("", ' opacity=".5"')):
+        body += (f'<g{half}><animateTransform attributeName="transform" type="translate" '
+                 f'values="0 0;{dx} {dy};0 0" keyTimes="0;.5;1" calcMode="spline" keySplines="{EASE};{EASE}" '
+                 f'dur="{dur}s" repeatCount="indefinite"/><rect {box} filter="url(#{fid})"/></g>')
+    clip_attr = f' clip-path="url(#{clip})"' if clip else ""
+    return defs, f'<g{clip_attr} style="mix-blend-mode:{blend}" opacity="{opacity}"><g filter="url(#{uid}N)">{body}</g></g>'

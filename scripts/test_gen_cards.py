@@ -61,7 +61,9 @@ class CardTests(unittest.TestCase):
                     # on the panel and the shelf, and the hero's halos on the works card
                     self.assertEqual('<filter id="sea' in svg, SEASON == "summer" and fn in (gen_cards.stats_panel, gen_cards.shelf_card))
                     self.assertEqual('<radialGradient id="sunWGlow"' in svg, SEASON == "summer" and fn is gen_cards.works_card)
-                    self.assertFalse(SEASON == "summer" and 'Soft"' in svg)
+                    # and spring the sun through new leaves (spring.leaf_light), on all three
+                    self.assertEqual('<filter id="leaf' in svg, SEASON == "spring" and fn is not gen_cards.toc_card)
+                    self.assertFalse(SEASON in ("spring", "summer") and 'Soft"' in svg)
                     ET.fromstring(punch(svg, theme == "dark"))
 
     def test_full_profile(self):
