@@ -285,6 +285,31 @@ class CardTests(unittest.TestCase):
         self.assertEqual(len(queried), 2)
         self.assertEqual(len(days), 3)
 
+    def test_gql_retries(self):
+        """A timeout while reading the answer, and github's own timeout (a 200 carrying errors), are each tried again."""
+        replies = [TimeoutError("timed out"), io.BytesIO(b'{"errors": [{"message": "timeout"}]}'),
+                   io.BytesIO(b'{"data": {"ok": 1}}')]
+        with mock.patch.object(gen_cards, "TOKEN", "t"), mock.patch("time.sleep"),                 mock.patch("urllib.request.urlopen", side_effect=replies) as urlopen:
+            self.assertEqual(gen_cards.gql("query", {}), {"ok": 1})
+        self.assertEqual(urlopen.call_count, 3)
+
+    def test_gql_gives_up(self):
+        """Errors that outlast the retries end the run with github's message."""
+        replies = [io.BytesIO(b'{"errors": [{"message": "no such user"}]}') for _ in range(3)]
+        with mock.patch.object(gen_cards, "TOKEN", "t"), mock.patch("time.sleep"),                 mock.patch("urllib.request.urlopen", side_effect=replies), self.assertRaises(SystemExit) as stop:
+            gen_cards.gql("query", {})
+        self.assertIn("no such user", str(stop.exception))
+
+    def test_snake_colours_match_the_workflow(self):
+        """cards.yml asks snk for autumn's colours, and snake_card swaps exactly those strings for the season's:
+        if the two lists drift apart, the other seasons' bookworm keeps autumn's dots."""
+        here = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(here, "..", ".github", "workflows", "cards.yml"), encoding="utf-8") as fh:
+            workflow = fh.read()
+        for theme in ("dark", "light"):
+            snake, *dots = gen_cards.AUTUMN[theme]["snake"]
+            self.assertIn(f"snake-{theme}.svg?palette=github-{theme}&color_snake={snake}&color_dots={','.join(dots)}", workflow)
+
 
 class StreakTests(unittest.TestCase):
     """Keep totals and streak dates correct across gaps and the open current day."""

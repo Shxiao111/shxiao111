@@ -15,7 +15,6 @@ includes private contributions only as far as the token's viewer may see them (o
 """
 import colorsys
 import datetime as dt
-import html
 import json
 import os
 import random
@@ -112,6 +111,9 @@ def gql(query, variables, retries=2):
             with urllib.request.urlopen(req, timeout=60) as resp:
                 res = json.load(resp)
             if res.get("errors"):
+                if attempt < retries:   # github reports its own timeouts this way, under a 200
+                    time.sleep(1.5 * (attempt + 1))
+                    continue
                 sys.exit(json.dumps(res["errors"], indent=2))
             return res["data"]
         except urllib.error.HTTPError as e:
@@ -120,11 +122,11 @@ def gql(query, variables, retries=2):
                 time.sleep(1.5 * (attempt + 1))
                 continue
             sys.exit(f"GitHub GraphQL HTTP {e.code}: {e.reason}\n{err_body}")
-        except urllib.error.URLError as e:
+        except OSError as e:   # URLError, and what it does not wrap: a timeout or a reset while reading the answer
             if attempt < retries:
                 time.sleep(1.5 * (attempt + 1))
                 continue
-            sys.exit(f"Network error connecting to GitHub: {e.reason}")
+            sys.exit(f"Network error connecting to GitHub: {getattr(e, 'reason', e)}")
 
 
 YEARS_QUERY = "query($login: String!) { user(login: $login) { contributionsCollection { contributionYears } } }"

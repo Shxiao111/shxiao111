@@ -32,5 +32,10 @@ jobs:
         run: python -m unittest discover -s scripts -p "test_*.py"
       - name: rebuild static assets
         run: python scripts/gen_hero.py
+      # when the season has just turned, cards.yml's daily run may not have redrawn them yet (its schedule can
+      # start hours late): until it has, last season's pages are the current ones
       - name: check committed assets are current
-        run: git diff --exit-code -- assets/
+        run: |
+          git diff --quiet -- assets/ && exit 0
+          SEASON=$(python -c "import sys, datetime as dt; sys.path.insert(0, 'scripts'); from common import season_of; print(season_of((dt.datetime.now(dt.timezone.utc).month - 2) % 12 + 1))") python scripts/gen_hero.py
+          git diff --exit-code -- assets/
