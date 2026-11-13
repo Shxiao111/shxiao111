@@ -28,12 +28,14 @@ import urllib.request
 
 from common import CALM, EASE, FONTS, SEASON, art, esc, fontface, smooth_fade, star_path, write_svg
 from paper import punch
-from sunlight import light_rays
+from sunlight import halo, light_rays
 from spring import BLOSSOM_PETAL
-if SEASON == "winter":       # the sprig in the bookshelf's vase: maple, plum blossom, or cherry blossom
+if SEASON == "winter":       # the sprig in the bookshelf's vase: maple, plum blossom, cherry blossom, or hibiscus
     from winter import MIST_CSS, PLUM_COLORS as LEAF_COLORS, PLUM_STALK as STALK_END, flake_def, ice, mist, plum_def as leaf_def
 elif SEASON == "spring":
     from spring import BLOSSOM_STALK as STALK_END, PETAL_COLORS as LEAF_COLORS, blossom_def as leaf_def
+elif SEASON == "summer":
+    from summer import BLOSSOM_STALK as STALK_END, PETAL_COLORS as LEAF_COLORS, hibiscus_def as leaf_def, water_light
 else:
     from maple import LEAF_COLORS, STALK_END, leaf_def
 
@@ -298,16 +300,13 @@ WINTER = {
         grad0="#ffffff", grad1="#b9a8ff",
         pbg0="#18152d", pbg1="#0f1020", pbg2="#0b1526", frame="#b9b4f0", frameO=".22", grainO=".045",
         blobA="#6a5cc9", blobAo=".26", blobB="#2a5a8f", blobBo=".34", blobC="#4f8fd0", blobCo=".22",
-        spark="#eaf2ff", toneR="0 .42 .80", toneG="0 .46 .85", toneB="0 .52 .93",
+        spark="#eaf2ff", toneR="0 1", toneG="0 1", toneB="0 1",
         wood="#5e4d48", wood0="#4b3c38", wood1="#2e2422", woodLine="#160f0e", wallShade="#000", wallShadeO=".55",
         bookShade="#000", bookShadeO=".55", clothDim="0", foil="#dfe5f5", foilDark="#1c2238",
         vase0="#7aa593", vase1="#3c5c50", metal0="#8d93a6", metal1="#484c5c", stem="#8a6a5c",
         ribbon0="#e0506c", ribbon1="#9c2a44", ribbonShadeO=".35", gutter="#000", gutterO=".42",
         nextPage="#1c1b36", flap0="#0b0b18", flap1="#55567e", flap2="#333452", flap3="#24253e", curlShadeO=".5", blossom="#f2a2b5",
         glintO=".16",
-        # the works picture is nearly all white paper: four stops, so that falls to a moonlit blue while the
-        # linework and shading under it keep their depth
-        worksTone=dict(toneR="0 .08 .22 .52", toneG="0 .10 .29 .62", toneB="0 .18 .44 .88"),
         paper="#e9e8f2", ink="#22243a", inkMuted="#62668a", coverDim=".1", back0="#1e1f33", back1="#12131f",
         snake=["#f29bb5", "#1e1f3a", "#2c3a78", "#4763b8", "#7fa2ea", "#d3e2ff"], drift="#b9cbf9"),
     "light": dict(
@@ -339,17 +338,13 @@ SPRING = {
         grad0="#ffffff", grad1="#b4dc5a",
         pbg0="#171e0e", pbg1="#0f1610", pbg2="#0b1716", frame="#cfe69a", frameO=".20", grainO=".045",
         blobA="#6fa82a", blobAo=".26", blobB="#2a6f6a", blobBo=".34", blobC="#c9668a", blobCo=".22",
-        spark="#ffe3ec", toneR="0 .42 .82", toneG="0 .48 .88", toneB="0 .36 .70",
+        spark="#ffe3ec", toneR="0 1", toneG="0 1", toneB="0 1",
         wood="#6b4a2a", wood0="#553820", wood1="#3a2613", woodLine="#1e1208", wallShade="#000", wallShadeO=".55",
         bookShade="#000", bookShadeO=".55", clothDim="0", foil="#ecd27a", foilDark="#2a1d0a",
         vase0="#7aa593", vase1="#3c5c50", metal0="#8a826c", metal1="#4a453a", stem="#8a5a3c",
         ribbon0="#e8718a", ribbon1="#a83a58", ribbonShadeO=".35", gutter="#000", gutterO=".42",
         nextPage="#1b2312", flap0="#0b0f08", flap1="#56633c", flap2="#343f22", flap3="#242c18", curlShadeO=".5", blossom="#f2a2b5",
         glintO=".16",
-        # the works picture is new leaves over white paper: four stops, so the paper falls to dusk while the
-        # linework and shading under it keep their depth - a dusk near grey, since her face is that paper and a
-        # green one looks ill
-        worksTone=dict(toneR="0 .20 .46 .82", toneG="0 .22 .50 .86", toneB="0 .17 .40 .75"),
         paper="#eef0dc", ink="#232b18", inkMuted="#66704e", coverDim=".1", back0="#1e2716", back1="#12180c",
         snake=["#f29bb5", "#1c2414", "#2f4a1a", "#4c7a22", "#7fb52e", "#c6ec6a"]),
     "light": dict(
@@ -370,9 +365,49 @@ SPRING = {
         paper="#fdfff6", ink="#232b18", inkMuted="#66704e", coverDim="0", back0="#e4eec2", back1="#cfdea0",
         snake=["#d9627f", "#edf3dc", "#cfe69a", "#9fcf4a", "#6a9a1c", "#3f6a14"]),
 }
-PAL = {"autumn": AUTUMN, "winter": WINTER, "spring": SPRING}[SEASON]
+
+# Summer: the sky's blue and hibiscus pink, on autumn's wood and gilt; the ribbon and the bookworm are hibiscus too.
+SUMMER = {
+    "dark": dict(
+        bg0="#0f1d2e", bg1="#0c1622", border="#1f3a55",
+        title="#eaf6ff", label="#9fbdd6", value="#eaf6ff", muted="#7391ab",
+        accent="#7cc8f5", accent2="#f2859b", track="#172a40",
+        langs=["#7cc8f5", "#f2859b", "#5fd0c0", "#f0d67a", "#b9a8ff", "#3f8fd0"],
+        grad0="#ffffff", grad1="#7cc8f5",
+        pbg0="#0f1d2e", pbg1="#0c1622", pbg2="#0a1a1f", frame="#a9d6f5", frameO=".20", grainO=".045",
+        blobA="#2a8fd6", blobAo=".26", blobB="#1f7a7a", blobBo=".34", blobC="#d9607c", blobCo=".20",
+        spark="#fff3c4", toneR="0 1", toneG="0 1", toneB="0 1",
+        wood="#6b4a2a", wood0="#553820", wood1="#3a2613", woodLine="#1e1208", wallShade="#000", wallShadeO=".55",
+        bookShade="#000", bookShadeO=".55", clothDim="0", foil="#ecd27a", foilDark="#2a1d0a",
+        vase0="#7aa593", vase1="#3c5c50", metal0="#8a826c", metal1="#4a453a", stem="#7a8a4c",
+        ribbon0="#ef5a78", ribbon1="#a82a4a", ribbonShadeO=".35", gutter="#000", gutterO=".42",
+        nextPage="#14253a", flap0="#080f18", flap1="#3f5a78", flap2="#263a52", flap3="#1a2a3e", curlShadeO=".5", blossom="#f2a2b5",
+        glintO=".16",
+        paper="#e8f0f6", ink="#1a2a3a", inkMuted="#5a6e84", coverDim=".1", back0="#16263a", back1="#0d1826",
+        snake=["#f2859b", "#142234", "#1a4a78", "#2a78b8", "#4aa8e8", "#a8dcff"]),
+    "light": dict(
+        bg0="#fafdff", bg1="#eaf5fc", border="#cfe3f2",
+        title="#0f2c47", label="#4a6a88", value="#0f2c47", muted="#7c97b0",
+        accent="#1f7fc8", accent2="#d9506c", track="#dcecf7",
+        langs=["#1f7fc8", "#d9506c", "#1f9f8f", "#c89a1c", "#7a6ad0", "#0f3f6f"],
+        grad0="#0f2c47", grad1="#1f7fc8",
+        pbg0="#e8f5fd", pbg1="#fafdff", pbg2="#e6f7f3", frame="#2f7fbf", frameO=".18", grainO=".03",
+        blobA="#bfe3fa", blobAo=".50", blobB="#c4ece4", blobBo=".55", blobC="#fbd9e0", blobCo=".60",
+        spark="#e3a41c", toneR="0 1", toneG="0 1", toneB="0 1",
+        wood="#dcb682", wood0="#c0915a", wood1="#9a6a38", woodLine="#6b4520", wallShade="#2a4a6a", wallShadeO=".20",
+        bookShade="#203a5a", bookShadeO=".22", clothDim="0", foil="#f3d98a", foilDark="#3a2a10",
+        vase0="#b3d0c1", vase1="#6f9483", metal0="#c2b9a2", metal1="#7d7462", stem="#55703a",
+        ribbon0="#e0405f", ribbon1="#b02a48", ribbonShadeO=".16", gutter="#2a4a6a", gutterO=".14",
+        nextPage="#e2eff8", flap0="#a9c4d8", flap1="#ffffff", flap2="#eef6fb", flap3="#d6e6f2", curlShadeO=".16", blossom="#dc7690",
+        glintO=".22",
+        paper="#fcfeff", ink="#1a2a3a", inkMuted="#5a6e84", coverDim="0", back0="#dcebf5", back1="#c2d9ea",
+        snake=["#d9506c", "#e8f1f8", "#bfe0f7", "#7fc0ee", "#2f8fd6", "#145a9c"]),
+}
+# only autumn's pictures are toned down for the dark theme (toneR/G/B, worksTone): the other seasons' keep their
+# daylight on the night page
+PAL = {"autumn": AUTUMN, "winter": WINTER, "spring": SPRING, "summer": SUMMER}[SEASON]
 # px over which the stats picture fades in from its left edge: winter's girl stands close to that edge
-STATS_FADE = {"autumn": 230, "winter": 120, "spring": 150}[SEASON]
+STATS_FADE = {"autumn": 230, "winter": 120, "spring": 150, "summer": 150}[SEASON]
 
 
 CSS = (fontface("outfit") + fontface("jbmono") +
@@ -559,6 +594,11 @@ def stats_panel(theme, d):
     sun_defs, sun = light_rays("sunS", 30, W - 60, H, theme == "dark", from_left=False, seed=9, count=4,
                                span=PAIR_H, y0=0)
     frost, fog, wrap = "", "", ("", "")
+    if SEASON == "summer":
+        # no shafts at noon: the panel is by the sea, and the light off the water plays over it - under the picture,
+        # where the frost goes in winter, so no ripple crosses her face
+        sun_defs, frost = water_light("seaS", W, H, theme == "dark", seed=9)
+        sun = ""
     if SEASON == "winter":
         # no low sun in winter: the panel is a cold pane.  Frost builds up round its edges, thinning out where the
         # picture comes in with ice of its own; and now and then the whole pane mists over, and clears
@@ -661,7 +701,7 @@ def spine_trim(style, x, y, w, foil, ornament, vol_idx=0):
     return ribs + trim
 
 def vase(p, cx, base):
-    """A celadon bud vase with a sprig that sways a little - maple, plum blossom in winter, cherry in spring - and now and then
+    """A celadon bud vase with a sprig that sways a little - maple, plum blossom in winter, cherry in spring, hibiscus in summer - and now and then
     drops a leaf or a flower on the shelf."""
     rnd = random.Random(3)
     mouth = base - 54
@@ -896,6 +936,9 @@ def shelf_card(theme, d):
     glow_color = p["accent"] if dark else p["blobA"]
     glow_op = ".10" if dark else ".22"
     ambient = f'<ellipse cx="860" cy="170" rx="340" ry="110" fill="{glow_color}" opacity="{glow_op}" filter="url(#shelfGlow)"/>'
+    if SEASON == "summer":       # the same sea as the stats card above, on the wall behind the books: their print stays clear
+        sun_defs, sea = water_light("seaShelf", W, H, dark, seed=4, clip="sunS")
+        ambient, sun = ambient + sea, ""
 
     # Contact shadow at the base of the books
     contact_shadow = (
@@ -1318,7 +1361,7 @@ WORKS_TUCK = 60            # how far the picture runs on under the bookcase, so 
 # the works card is painted with its picture's own light, so the picture fades into it: `bg` is the picture's colours
 # down its right edge, top to bottom (sampled from works.jpg), then the bookcase's wood and back panel, the glow, and
 # what drifts down across the card - autumn's golden tree and its white blossom, winter's snow sky and snow, spring's
-# new leaves and cherry petals
+# new leaves and cherry petals, summer's noon sky going down into cloud (nothing drifts there)
 WORKS = {
     "autumn": dict(bg=["#fba02e", "#f79c3d", "#f7bb78"], wood0="#e2ae62", wood1="#b67a38", woodLine="#7a4a1c",
                    back0="#f9e2a8", back1="#eec07a", glow="#ffe9a6", petal="#fffaf0", petalShade="#6b4a1a"),
@@ -1326,6 +1369,8 @@ WORKS = {
                    back0="#e6ebf3", back1="#cbd5e3", glow="#ffffff", petal="#a9bdf4", petalShade="#5a6a8a"),
     "spring": dict(bg=["#d4f1b8", "#f9fef3", "#ffffff"], wood0="#e6dcae", wood1="#b3a56a", woodLine="#6a6032",
                    back0="#f6fae2", back1="#dfecb8", glow="#fbffdc", petal="#fbc4d4", petalShade="#4a6a2a"),
+    "summer": dict(bg=["#1f92fd", "#2194fe", "#f0feff"], wood0="#fbf8ee", wood1="#d9d2bc", woodLine="#8a8266",
+                   back0="#eef7fd", back1="#cfe4f3", glow="#ffffff"),
 }[SEASON]
 
 
@@ -1455,7 +1500,7 @@ def bookcase(p, d, rows, light=""):
 
 def works_card(theme, d):
     """Chapter ii: Tooko with a book in her arms (works.jpg: under the golden tree in autumn, crouched in the snow
-    in winter, under new leaves in spring), fading into a two-shelf bookcase of the pinned repositories as bunkobon - the top shelf takes the odd
+    in winter, under new leaves in spring, against the sky in summer), fading into a two-shelf bookcase of the pinned repositories as bunkobon - the top shelf takes the odd
     one, and the case is two or three books wide - with white petals, or snow, drifting down across both.  The books keep their full size, so their
     print stays legible."""
     p = dict(PAL[theme], **PAL[theme].get("worksTone", {}))
@@ -1475,7 +1520,8 @@ def works_card(theme, d):
     cx, cy = W - M - cw, M
     IW = cx + WORKS_TUCK         # works.jpg (930x1092), pinned to the top left and cut to fill up to the bookcase
     petals = []
-    for k in range(7):   # white blossom drifting from the tree (or snow), down and to the right, across the bookcase
+    # white blossom drifting from the tree (or snow), down and to the right, across the bookcase; none in summer
+    for k in range(0 if SEASON == "summer" else 7):
         x0, dur = rnd.uniform(-40, W * .55), rnd.uniform(14, 22)
         beg, s, spin = -rnd.uniform(0, dur), rnd.uniform(1.6, 2.6), rnd.uniform(0, 360)
         petals.append(f'<g opacity="{rnd.uniform(.55, .85):.2f}"><animateTransform attributeName="transform" type="translate" '
@@ -1498,6 +1544,11 @@ def works_card(theme, d):
     # the tree's light: shafts of sun from the upper left, across the picture and the card behind the bookcase
     sun_defs, sun = light_rays("sunW", 80, W - 80, H, dark, seed=5, count=5)
     fog, wrap = "", ("", "")
+    if SEASON == "summer":
+        # no tree to shade her: the sun itself, in the lens - the hero's big breathing halos, clear of her face, brighter to show
+        # against the sky, and in the dark theme's glow on both pages (this card is painted in its picture's blue, whatever the page)
+        sun_defs, sun = halo("sunW", [(150, 150, 190, True), (cx - 70, 330, 150, True), (110, 520, 110, False),
+                                      (cx - 150, 640, 90, False), (470, 60, 70, False)], True, strength=1.6)
     if SEASON == "winter":       # no low sun in winter: now and then the whole card mists over like a cold pane
         sun_defs, fog = mist("mistW", "wall", W, H, dark, seed=6, delay=-15)
         sun, wrap = "", ('<g id="wall">', "</g>")

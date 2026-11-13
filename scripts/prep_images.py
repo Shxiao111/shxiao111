@@ -3,8 +3,8 @@
 
 Inputs (not tracked): the "文学少女" illustrations in pictures/<season>/, numbered in the order of the cards they
 go to - 1.jpg the hero, 2.jpg the stats panel, 3.jpg the works-in-progress card, 4.jpg the footer (spring's 1-3.jpg
-is one spread for cards 1 and 3) - plus, for a season that has one, extra.jpg.
-Outputs: scripts/art/<season>/{hero,stats,works,footer}.jpg (and tree.jpg from winter's and spring's extra.jpg).
+is one spread for cards 1 and 3, summer's 3-2.jpg one for cards 3 and 2) - plus, for a season that has one, extra.jpg.
+Outputs: scripts/art/<season>/{hero,stats,works,footer}.jpg (and tree.jpg from winter's extra.jpg).
 Needs Pillow (pip install Pillow; CI never runs this, so it is not in requirements.txt).
 Run only when the source art changes:
     python scripts/prep_images.py [season]
@@ -66,9 +66,23 @@ CROPS = {
         # the two girls lying head to head in the grass with their books: both faces, hers on the left, down to
         # the book in her arms; aspect matches spring's 600x380 slot
         "footer": ("4.jpg", (846, 382, 3766, 2230), (1200, 760)),
-        # the cherry tree in bloom, all of it: the blossom from where it thins out on the left to the page's right
-        # edge, down to the girl asleep at its foot and the petals on the ground
-        "tree": ("extra.jpg", (1556, 0, 4965, 3473), (500, 510)),
+    },
+    # summer has three scans too: 3-2.jpg is a spread, its left page the works card's (card 3) and its right page
+    # the stats panel's (card 2)
+    "summer": {
+        # the right page only, the girl under the palm leaves with her chin on her hands, over a book and a glass of
+        # hibiscus: from the leaves over her head to the glass, starting past the blue band down the page's left
+        # and stopping above the boy sat in the corner; her face in the left half, where the picture is still whole
+        "hero": ("1.jpg", (2712, 340, 4896, 2212), (1008, 864)),
+        # the right page, the girl drawn on white paper with a straw hat in her hands: head to waist, all the page
+        # across, hat to braid
+        "stats": ("3-2.jpg", (2500, 100, 4953, 2347), (1048, 960)),
+        # the left page, the girl in the white dress holding her straw hat on against the sky: hat to skirt, from
+        # just right of the caption down the page's left edge to where the page ends
+        "works": ("3-2.jpg", (140, 196, 2450, 2909), (930, 1092)),
+        # the girl and the boy sat over one book: all the page across, from his hair to their knees; aspect matches
+        # summer's 540x380 slot
+        "footer": ("4.jpg", (10, 395, 1220, 1246), (1080, 760)),
     },
 }
 

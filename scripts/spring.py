@@ -6,8 +6,7 @@ Spring keeps autumn's shafts of sun, in its own colour (sunlight.py).  Standard 
 from winter import PLUM_STALK as BLOSSOM_STALK, plum_def
 
 BLOSSOM_PETAL = "M0,0 C-3.3,-2.4 -3.5,-6.6 -1.3,-8.2 L0,-6.9 L1.3,-8.2 C3.5,-6.6 3.3,-2.4 0,0 Z"   # notched at the tip
-# the pinks of the tree in pictures/spring/extra.jpg, deepened: there they are a breath off white, and these have
-# to show on white paper as well as on a night page
+# cherry pinks, deep enough to show on white paper as well as on a night page
 PETAL_COLORS = ["#f29bb5", "#f7b4c8", "#ea86a6", "#f9c6d6", "#e2779a"]
 
 

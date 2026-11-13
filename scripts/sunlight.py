@@ -8,7 +8,7 @@ Halos: soft radial glows with a faint ring that slowly swell, dim and drift.
 Dark theme: screen-blended warm glow (black shade bands).  Light theme: light only, a pale warm white laid over the
 paper that brightens it; no multiply and no shade, which read as stains and shadows on the light background.
 The light takes the season's colour (TINT): autumn's low gold sun, winter's snow light and lantern glow, spring's
-sun through new leaves.
+sun through new leaves, summer's white noon.
 Standard library only; imported by gen_hero.py and gen_cards.py.
 """
 import random
@@ -18,7 +18,8 @@ from common import SEASON
 # (dark theme, light theme) colours of the shafts and of the halos
 TINT = {"autumn": dict(ray=("#ffe9a8", "#fae288"), halo=("#ffe3a0", "#fffdf2")),
         "winter": dict(ray=("#cfdcff", "#ffffff"), halo=("#ffd3e2", "#fff6fa")),
-        "spring": dict(ray=("#e6f5a8", "#f1fbb4"), halo=("#eaf7b0", "#fcfff0"))}[SEASON]
+        "spring": dict(ray=("#e6f5a8", "#f1fbb4"), halo=("#eaf7b0", "#fcfff0")),
+        "summer": dict(ray=("#dff1ff", "#ffffff"), halo=("#fff0b8", "#fffdf2"))}[SEASON]
 
 SKEW = 22          # degrees each band leans
 DRIFT = 90         # px each band glides, in the light's direction, over its lifetime
@@ -77,10 +78,11 @@ def light_rays(uid, x_from, x_to, h, dark, from_left=True, seed=1, count=4, span
     return defs, shade_layer + f'<g{clip_attr} style="mix-blend-mode:{light_blend}">{"".join(lights)}</g>'
 
 
-def halo(uid, glows, dark):
+def halo(uid, glows, dark, strength=1):
     """Defs and body for soft halos.  `glows` is a list of (cx, cy, r, ring): each glow breathes (grows ~12% and
-    dims) and drifts a little on its own slow cycle; `ring` adds the faint ring a bright light throws around itself."""
-    color, blend, core = (TINT["halo"][0], "screen", .55) if dark else (TINT["halo"][1], "normal", .85)
+    dims) and drifts a little on its own slow cycle; `ring` adds the faint ring a bright light throws around itself.
+    `strength`: how bright, beside the hero's - more, to show against a bright ground."""
+    color, blend, core = (TINT["halo"][0], "screen", .55 * strength) if dark else (TINT["halo"][1], "normal", .85)
     ease = ".45 0 .55 1;.45 0 .55 1"
     defs = (f'<radialGradient id="{uid}Glow"><stop offset="0" stop-color="{color}"/>'
             f'<stop offset=".3" stop-color="{color}" stop-opacity=".62"/><stop offset=".65" stop-color="{color}" stop-opacity=".2"/>'
@@ -93,12 +95,12 @@ def halo(uid, glows, dark):
         swell = (f'values="1;1.12;1" keyTimes="0;.5;1" calcMode="spline" keySplines="{ease}" '
                  f'dur="{breathe}s" begin="{-i * 3.1:.1f}s" repeatCount="indefinite"')
         ring_el = (f'<circle r="{r * .78:.0f}" fill="none" stroke="{color}" stroke-width="{max(6, r * .05):.0f}" '
-                   f'opacity="{.42 if dark else .8}" filter="url(#{uid}Ring)"/>' if ring else "")
+                   f'opacity="{.42 * strength if dark else .8:g}" filter="url(#{uid}Ring)"/>' if ring else "")
         body.append(
             f'<g transform="translate({cx} {cy})"><g>'
             f'<animateTransform attributeName="transform" type="translate" values="0 0;{dx} {dy};0 0" keyTimes="0;.5;1" '
             f'calcMode="spline" keySplines="{ease}" dur="{wander}s" begin="{-i * 7}s" repeatCount="indefinite"/>'
-            f'<g opacity="{core}"><animate attributeName="opacity" values="{core};{core * .6:.2f};{core}" keyTimes="0;.5;1" '
+            f'<g opacity="{core:.2f}"><animate attributeName="opacity" values="{core:.2f};{core * .6:.2f};{core:.2f}" keyTimes="0;.5;1" '
             f'calcMode="spline" keySplines="{ease}" dur="{breathe}s" begin="{-i * 3.1:.1f}s" repeatCount="indefinite"/>'
             f'<g><animateTransform attributeName="transform" type="scale" {swell}/>'
             f'<circle r="{r}" fill="url(#{uid}Glow)"/>{ring_el}</g></g></g></g>')
