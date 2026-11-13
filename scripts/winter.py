@@ -22,9 +22,9 @@ def flake_def(id_="leaf"):
     return f'<g id="{id_}" stroke="none">{arms}<circle r="1.5"/></g>'
 
 
-def plum_def(id_="leaf"):
-    """A plum blossom, ~13 units across: five round petals, overlapping a little, round a ring of pale stamens."""
-    petal = "M0,-.6 C-3.9,-1.2 -4.3,-6.4 0,-6.6 C4.3,-6.4 3.9,-1.2 0,-.6 Z"
+def plum_def(id_="leaf", petal="M0,-.6 C-3.9,-1.2 -4.3,-6.4 0,-6.6 C4.3,-6.4 3.9,-1.2 0,-.6 Z"):
+    """A plum blossom, ~13 units across: five round petals, overlapping a little, round a ring of pale stamens.
+    `petal`: another flower's (spring.py's cherry), in the plum's place."""
     petals = "".join(f'<path transform="rotate({a})" d="{petal}"/>' for a in range(0, 360, 72))
     veil = "".join(f'<path transform="rotate({a})" d="{petal}" fill="url(#{id_}Tint)"/>' for a in range(0, 360, 72))
     stamens = "".join(f'<circle cx="{2.5 * math.sin(math.radians(a)):.2f}" cy="{-2.5 * math.cos(math.radians(a)):.2f}" r=".42"/>'

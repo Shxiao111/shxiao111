@@ -7,7 +7,8 @@ glides sideways and fades out again, staggered so the pattern keeps shifting.
 Halos: soft radial glows with a faint ring that slowly swell, dim and drift.
 Dark theme: screen-blended warm glow (black shade bands).  Light theme: light only, a pale warm white laid over the
 paper that brightens it; no multiply and no shade, which read as stains and shadows on the light background.
-The light takes the season's colour (TINT): autumn's low gold sun, winter's snow light and lantern glow.
+The light takes the season's colour (TINT): autumn's low gold sun, winter's snow light and lantern glow, spring's
+sun through new leaves.
 Standard library only; imported by gen_hero.py and gen_cards.py.
 """
 import random
@@ -16,7 +17,8 @@ from common import SEASON
 
 # (dark theme, light theme) colours of the shafts and of the halos
 TINT = {"autumn": dict(ray=("#ffe9a8", "#fae288"), halo=("#ffe3a0", "#fffdf2")),
-        "winter": dict(ray=("#cfdcff", "#ffffff"), halo=("#ffd3e2", "#fff6fa"))}[SEASON]
+        "winter": dict(ray=("#cfdcff", "#ffffff"), halo=("#ffd3e2", "#fff6fa")),
+        "spring": dict(ray=("#e6f5a8", "#f1fbb4"), halo=("#eaf7b0", "#fcfff0"))}[SEASON]
 
 SKEW = 22          # degrees each band leans
 DRIFT = 90         # px each band glides, in the light's direction, over its lifetime

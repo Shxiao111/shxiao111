@@ -29,8 +29,11 @@ import urllib.request
 from common import CALM, EASE, FONTS, SEASON, art, esc, fontface, smooth_fade, star_path, write_svg
 from paper import punch
 from sunlight import light_rays
-if SEASON == "winter":       # the sprig in the bookshelf's vase: maple, or plum blossom
+from spring import BLOSSOM_PETAL
+if SEASON == "winter":       # the sprig in the bookshelf's vase: maple, plum blossom, or cherry blossom
     from winter import MIST_CSS, PLUM_COLORS as LEAF_COLORS, PLUM_STALK as STALK_END, flake_def, ice, mist, plum_def as leaf_def
+elif SEASON == "spring":
+    from spring import BLOSSOM_STALK as STALK_END, PETAL_COLORS as LEAF_COLORS, blossom_def as leaf_def
 else:
     from maple import LEAF_COLORS, STALK_END, leaf_def
 
@@ -325,9 +328,51 @@ WINTER = {
         paper="#fdfdff", ink="#22243a", inkMuted="#62668a", coverDim="0", back0="#dfe5ee", back1="#c5cfdd",
         snake=["#d9627f", "#ebebf7", "#c9d6f3", "#93b2ea", "#5d80d2", "#3b4fa2"], drift="#8c9fe6"),
 }
-PAL = {"autumn": AUTUMN, "winter": WINTER}[SEASON]
+
+# Spring: new-leaf green and cherry pink, on autumn's wood and gilt; the ribbon and the bookworm are cherry too.
+SPRING = {
+    "dark": dict(
+        bg0="#171e0e", bg1="#0f1610", border="#2f3d1a",
+        title="#f1f9dc", label="#b4c48c", value="#f1f9dc", muted="#8a9a68",
+        accent="#b4dc5a", accent2="#f29bb5", track="#232e14",
+        langs=["#b4dc5a", "#f29bb5", "#6fc8b8", "#e8d870", "#a9c8f2", "#7fa83a"],
+        grad0="#ffffff", grad1="#b4dc5a",
+        pbg0="#171e0e", pbg1="#0f1610", pbg2="#0b1716", frame="#cfe69a", frameO=".20", grainO=".045",
+        blobA="#6fa82a", blobAo=".26", blobB="#2a6f6a", blobBo=".34", blobC="#c9668a", blobCo=".22",
+        spark="#ffe3ec", toneR="0 .42 .82", toneG="0 .48 .88", toneB="0 .36 .70",
+        wood="#6b4a2a", wood0="#553820", wood1="#3a2613", woodLine="#1e1208", wallShade="#000", wallShadeO=".55",
+        bookShade="#000", bookShadeO=".55", clothDim="0", foil="#ecd27a", foilDark="#2a1d0a",
+        vase0="#7aa593", vase1="#3c5c50", metal0="#8a826c", metal1="#4a453a", stem="#8a5a3c",
+        ribbon0="#e8718a", ribbon1="#a83a58", ribbonShadeO=".35", gutter="#000", gutterO=".42",
+        nextPage="#1b2312", flap0="#0b0f08", flap1="#56633c", flap2="#343f22", flap3="#242c18", curlShadeO=".5", blossom="#f2a2b5",
+        glintO=".16",
+        # the works picture is new leaves over white paper: four stops, so the paper falls to dusk while the
+        # linework and shading under it keep their depth - a dusk near grey, since her face is that paper and a
+        # green one looks ill
+        worksTone=dict(toneR="0 .20 .46 .82", toneG="0 .22 .50 .86", toneB="0 .17 .40 .75"),
+        paper="#eef0dc", ink="#232b18", inkMuted="#66704e", coverDim=".1", back0="#1e2716", back1="#12180c",
+        snake=["#f29bb5", "#1c2414", "#2f4a1a", "#4c7a22", "#7fb52e", "#c6ec6a"]),
+    "light": dict(
+        bg0="#fcfff5", bg1="#f1f8da", border="#d9e6b0",
+        title="#1f3210", label="#5c6e34", value="#1f3210", muted="#84945c",
+        accent="#5f8f14", accent2="#d9627f", track="#e6f0c4",
+        langs=["#5f8f14", "#d9627f", "#2f8f7f", "#b89a1c", "#5a84c8", "#35520c"],
+        grad0="#1f3210", grad1="#5f8f14",
+        pbg0="#f3f9dc", pbg1="#fcfff5", pbg2="#eaf5ea", frame="#5f8a1a", frameO=".18", grainO=".03",
+        blobA="#d6ec8c", blobAo=".50", blobB="#c8e6d0", blobBo=".55", blobC="#fbd9e4", blobCo=".60",
+        spark="#e0809a", toneR="0 1", toneG="0 1", toneB="0 1",
+        wood="#dcb682", wood0="#c0915a", wood1="#9a6a38", woodLine="#6b4520", wallShade="#5a6a2a", wallShadeO=".22",
+        bookShade="#3a4a20", bookShadeO=".22", clothDim="0", foil="#f3d98a", foilDark="#3a2a10",
+        vase0="#b3d0c1", vase1="#6f9483", metal0="#c2b9a2", metal1="#7d7462", stem="#6a4a30",
+        ribbon0="#e0607c", ribbon1="#b03a58", ribbonShadeO=".16", gutter="#4a5a2a", gutterO=".16",
+        nextPage="#e8f0cc", flap0="#b9c88e", flap1="#fdfff4", flap2="#eef5d6", flap3="#dbe6b6", curlShadeO=".16", blossom="#dc7690",
+        glintO=".22",
+        paper="#fdfff6", ink="#232b18", inkMuted="#66704e", coverDim="0", back0="#e4eec2", back1="#cfdea0",
+        snake=["#d9627f", "#edf3dc", "#cfe69a", "#9fcf4a", "#6a9a1c", "#3f6a14"]),
+}
+PAL = {"autumn": AUTUMN, "winter": WINTER, "spring": SPRING}[SEASON]
 # px over which the stats picture fades in from its left edge: winter's girl stands close to that edge
-STATS_FADE = {"autumn": 230, "winter": 120}[SEASON]
+STATS_FADE = {"autumn": 230, "winter": 120, "spring": 150}[SEASON]
 
 
 CSS = (fontface("outfit") + fontface("jbmono") +
@@ -616,7 +661,7 @@ def spine_trim(style, x, y, w, foil, ornament, vol_idx=0):
     return ribs + trim
 
 def vase(p, cx, base):
-    """A celadon bud vase with a sprig that sways a little - maple, or in winter plum blossom - and now and then
+    """A celadon bud vase with a sprig that sways a little - maple, plum blossom in winter, cherry in spring - and now and then
     drops a leaf or a flower on the shelf."""
     rnd = random.Random(3)
     mouth = base - 54
@@ -969,7 +1014,6 @@ def toc_entry(p, x0, x1, y, num, name, value, sub, t):
             f'<text x="{nx}" y="{y + 21}" class="m" font-size="11.5" fill="{p["muted"]}">{esc(sub)}</text></g>' + leader, nx, nw)
 
 
-BLOSSOM_PETAL = "M0,0 C-3.3,-2.4 -3.5,-6.6 -1.3,-8.2 L0,-6.9 L1.3,-8.2 C3.5,-6.6 3.3,-2.4 0,0 Z"   # notched at the tip
 # what drifts down the works card and across its covers: blossom petals, or in winter snow crystals - as (the element
 # and what it draws, the crystal for <defs>, its size beside a petal's)
 if SEASON == "winter":
@@ -1273,12 +1317,15 @@ WORKS_W = 1200             # as wide as the other cards
 WORKS_TUCK = 60            # how far the picture runs on under the bookcase, so its fade ends behind it
 # the works card is painted with its picture's own light, so the picture fades into it: `bg` is the picture's colours
 # down its right edge, top to bottom (sampled from works.jpg), then the bookcase's wood and back panel, the glow, and
-# what drifts down across the card - autumn's golden tree and its white blossom, winter's snow sky and snow
+# what drifts down across the card - autumn's golden tree and its white blossom, winter's snow sky and snow, spring's
+# new leaves and cherry petals
 WORKS = {
     "autumn": dict(bg=["#fba02e", "#f79c3d", "#f7bb78"], wood0="#e2ae62", wood1="#b67a38", woodLine="#7a4a1c",
                    back0="#f9e2a8", back1="#eec07a", glow="#ffe9a6", petal="#fffaf0", petalShade="#6b4a1a"),
     "winter": dict(bg=["#f2f4f5", "#f8f8f8", "#d5dee0"], wood0="#b9c5d6", wood1="#8595ad", woodLine="#4a5670",
                    back0="#e6ebf3", back1="#cbd5e3", glow="#ffffff", petal="#a9bdf4", petalShade="#5a6a8a"),
+    "spring": dict(bg=["#d4f1b8", "#f9fef3", "#ffffff"], wood0="#e6dcae", wood1="#b3a56a", woodLine="#6a6032",
+                   back0="#f6fae2", back1="#dfecb8", glow="#fbffdc", petal="#fbc4d4", petalShade="#4a6a2a"),
 }[SEASON]
 
 
@@ -1408,7 +1455,7 @@ def bookcase(p, d, rows, light=""):
 
 def works_card(theme, d):
     """Chapter ii: Tooko with a book in her arms (works.jpg: under the golden tree in autumn, crouched in the snow
-    in winter), fading into a two-shelf bookcase of the pinned repositories as bunkobon - the top shelf takes the odd
+    in winter, under new leaves in spring), fading into a two-shelf bookcase of the pinned repositories as bunkobon - the top shelf takes the odd
     one, and the case is two or three books wide - with white petals, or snow, drifting down across both.  The books keep their full size, so their
     print stays legible."""
     p = dict(PAL[theme], **PAL[theme].get("worksTone", {}))

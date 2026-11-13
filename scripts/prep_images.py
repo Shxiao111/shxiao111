@@ -2,9 +2,9 @@
 """Prepare the crops that gen_hero.py and gen_cards.py embed into the cards.
 
 Inputs (not tracked): the "文学少女" illustrations in pictures/<season>/, numbered in the order of the cards they
-go to - 1.jpg the hero, 2.jpg the stats panel, 3.jpg the works-in-progress card, 4.jpg the footer - plus, for a
-season that has one, extra.jpg.
-Outputs: scripts/art/<season>/{hero,stats,works,footer}.jpg (and tree.jpg from winter's extra.jpg).
+go to - 1.jpg the hero, 2.jpg the stats panel, 3.jpg the works-in-progress card, 4.jpg the footer (spring's 1-3.jpg
+is one spread for cards 1 and 3) - plus, for a season that has one, extra.jpg.
+Outputs: scripts/art/<season>/{hero,stats,works,footer}.jpg (and tree.jpg from winter's and spring's extra.jpg).
 Needs Pillow (pip install Pillow; CI never runs this, so it is not in requirements.txt).
 Run only when the source art changes:
     python scripts/prep_images.py [season]
@@ -50,6 +50,25 @@ CROPS = {
         # the tree hung with lights, from just under the passage above it to the foot of the page, between the
         # captions in the two bottom corners
         "tree": ("extra.jpg", (165, 585, 1001, 1649), (500, 636)),
+    },
+    # spring has three scans for the four cards: 1-3.jpg is a spread, its left page the hero's (card 1) and its
+    # right page the works card's (card 3)
+    "spring": {
+        # the left page, the girl in the pale green dress with anemones and a book in her lap: braid to book, her
+        # face in the left half, where the picture is still whole
+        "hero": ("1-3.jpg", (360, 229, 2197, 1804), (1008, 864)),
+        # the girl leaning out of the classroom window (the right of the spread, past the boy writing at the desk):
+        # head to waist, between two window posts
+        "stats": ("2.jpg", (3524, 754, 4918, 2030), (1048, 960)),
+        # the right page, the girl under the tree in new leaf with a book held to her chest: all the page across,
+        # from the branches over her head to the skirt, both braids looping out
+        "works": ("1-3.jpg", (2500, 60, 4920, 2901), (930, 1092)),
+        # the two girls lying head to head in the grass with their books: both faces, hers on the left, down to
+        # the book in her arms; aspect matches spring's 600x380 slot
+        "footer": ("4.jpg", (846, 382, 3766, 2230), (1200, 760)),
+        # the cherry tree in bloom, all of it: the blossom from where it thins out on the left to the page's right
+        # edge, down to the girl asleep at its foot and the petals on the ground
+        "tree": ("extra.jpg", (1556, 0, 4965, 3473), (500, 510)),
     },
 }
 

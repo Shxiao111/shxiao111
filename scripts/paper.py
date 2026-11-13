@@ -13,7 +13,7 @@ R = 8            # hole radius
 PITCH = 40       # centre-to-centre spacing
 CX = 26          # inset from the punched edge
 MARGIN = 36      # keep clear of the rounded corners
-RIM = {"autumn": "#fff3c4", "winter": "#dbe4ff"}[SEASON]   # the light a cut edge catches on the dark theme
+RIM = {"autumn": "#fff3c4", "winter": "#dbe4ff", "spring": "#ecf8c8"}[SEASON]   # the light a cut edge catches on the dark theme
 
 
 def hole_ys(h):
