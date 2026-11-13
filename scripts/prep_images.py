@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
-"""Prepare the crops that gen_hero.py embeds into the banners.
+"""Prepare the crops that gen_hero.py and gen_cards.py embed into the cards.
 
-Inputs (not tracked, at the repo root): the "文学少女" illustrations
-    012.jpg (4961x3502) - the girl waving from behind the classroom window
-    001.jpg (1600x1130) - the girl sitting in fallen maple leaves
-    022.jpg (4976x3502) - the girl reaching up to the window (right page only; the book on the left page is dropped)
-    021.jpg (4966x3502) - the girl holding a red book under the golden tree
-Outputs: scripts/hero.jpg, scripts/footer.jpg, scripts/stats.jpg, scripts/works.jpg (the last two are embedded by
-gen_cards.py)
+Inputs (not tracked): the "文学少女" illustrations in pictures/<season>/, numbered in the order of the cards they
+go to - 1.jpg the hero, 2.jpg the stats panel, 3.jpg the works-in-progress card, 4.jpg the footer - plus, for a
+season that has one, extra.jpg.
+Outputs: scripts/art/<season>/{hero,stats,works,footer}.jpg (and tree.jpg from winter's extra.jpg).
 Needs Pillow (pip install Pillow; CI never runs this, so it is not in requirements.txt).
 Run only when the source art changes:
-    python scripts/prep_images.py [dir-with-sources]
+    python scripts/prep_images.py [season]
 """
 import os
 import sys
@@ -19,27 +16,54 @@ from PIL import Image, ImageEnhance
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-# name: (source, crop box in source pixels, output size)
+# season: name: (source, crop box in source pixels, output size)
 CROPS = {
-    # head to hand, cut right after the panel she hides behind; aspect matches the 560x480 slot
-    "hero": ("012.jpg", (0, 120, 2484, 2250), (1008, 864)),
-    # her and both braids, stopping short of the vertical poem on the right; aspect matches the 485x380 slot
-    "footer": ("001.jpg", (0, 20, 1200, 960), (970, 760)),
-    # head to waist with the raised hand and the pink book; aspect matches the 524x480 slot of the stats panel
-    "stats": ("022.jpg", (2300, 100, 4700, 2300), (1048, 960)),
-    # head to skirt with the red book held to her chest and the braid swinging out, clear of the vertical passage on
-    # her left and the folio at the foot; aspect matches the 620x728 slot of the works-in-progress card
-    "works": ("021.jpg", (819, 298, 3054, 2922), (930, 1092)),
+    "autumn": {
+        # the girl waving from behind the classroom window: head to hand, cut right after the panel she hides
+        # behind; aspect matches the 560x480 slot
+        "hero": ("1.jpg", (0, 120, 2484, 2250), (1008, 864)),
+        # the girl reaching up to the window (right page only; the book on the left page is dropped): head to waist
+        # with the raised hand and the pink book; aspect matches the 524x480 slot of the stats panel
+        "stats": ("2.jpg", (2300, 100, 4700, 2300), (1048, 960)),
+        # the girl under the golden tree: head to skirt with the red book held to her chest and the braid swinging
+        # out, clear of the vertical passage on her left and the folio at the foot; pinned to the top left of the
+        # works-in-progress card and cut to fill up to the bookcase
+        "works": ("3.jpg", (819, 298, 3054, 2922), (930, 1092)),
+        # the girl sitting in fallen maple leaves: her and both braids, stopping short of the vertical poem on the
+        # right; aspect matches the 485x380 slot
+        "footer": ("4.jpg", (0, 20, 1200, 960), (970, 760)),
+    },
+    "winter": {
+        # the right page only, the girl in the yukata looking back under the festival lanterns: her face in the
+        # left half, where the picture is still whole, the passage beside her out in the last of the fade
+        "hero": ("1.jpg", (2950, 714, 4807, 2307), (1008, 864)),
+        # the girl on the right only, looking up into the snow: head to skirt with the scarf and braid blown out
+        # behind her and the frosted branches beyond, starting just past the mitten the girl in the middle throws up
+        # (the picture's fade takes the last of it)
+        "stats": ("2.jpg", (2376, 60, 4476, 1984), (1048, 960)),
+        # the girl crouching with a book in her arms: head to knees, as wide as the page goes on her right, the
+        # braid running out under the bookcase
+        "works": ("3.jpg", (640, 280, 3186, 3268), (930, 1092)),
+        # the girl breathing on her hands, seen from above: all the page between the grey gutters, from the scarf
+        # blowing off the top to her skirt; aspect matches winter's 520x380 slot
+        "footer": ("4.jpg", (60, 70, 1152, 868), (1040, 760)),
+        # the tree hung with lights, from just under the passage above it to the foot of the page, between the
+        # captions in the two bottom corners
+        "tree": ("extra.jpg", (165, 585, 1001, 1649), (500, 636)),
+    },
 }
 
 
-def main(src_dir="."):
-    for name, (src, box, size) in CROPS.items():
+def main(season="autumn"):
+    src_dir = os.path.join(os.path.dirname(HERE), "pictures", season)
+    out_dir = os.path.join(HERE, "art", season)
+    os.makedirs(out_dir, exist_ok=True)
+    for name, (src, box, size) in CROPS[season].items():
         crop = Image.open(os.path.join(src_dir, src)).convert("RGB").crop(box)
         # the scans are slightly washed out; a touch of contrast keeps linework readable once scaled down
         crop = ImageEnhance.Contrast(crop).enhance(1.06)
         out = crop.resize(size, Image.LANCZOS)
-        path = os.path.join(HERE, f"{name}.jpg")
+        path = os.path.join(out_dir, f"{name}.jpg")
         out.save(path, "JPEG", quality=80, optimize=True, subsampling=2)
         print(f"{path}: {os.path.getsize(path)//1024} KB")
 

@@ -2,16 +2,19 @@
 """Regenerate assets/hero-*.svg, chapter-*.svg and footer-*.svg.
 
 Usage:  python scripts/gen_hero.py      (needs fontTools + brotli for text measuring)
-Fonts come from scripts/fonts.json (Google Fonts subsets), the art from scripts/{hero,footer}.jpg
-(see prep_images.py).  Edit the text block below to change the wording.
+Fonts come from scripts/fonts.json (Google Fonts subsets), the art from scripts/art/<season>/{hero,footer}.jpg
+(see prep_images.py; common.SEASON picks the season).  Edit the text block below to change the wording.
 """
 import base64, io, math, os, random
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.ttLib import TTFont
-from common import CALM, EASE, FONTS as fonts, esc, fontface, smooth_fade, star_path as star, write_svg
-from maple import LEAF_COLORS, leaf_def
-from paper import punch
+from common import CALM, EASE, FONTS as fonts, SEASON, art, esc, fontface, smooth_fade, star_path as star, write_svg
+from paper import RIM, punch
 from sunlight import halo
+if SEASON == "winter":       # what falls across the last page: maple leaves, or snow
+    from winter import FLAKE_COLORS as LEAF_COLORS, flake_def as leaf_def
+else:
+    from maple import LEAF_COLORS, leaf_def
 
 # ---- text ----------------------------------------------------------------------------------------
 NAME = "shxiao111"
@@ -25,10 +28,7 @@ CHAPTERS = ["Chapter I · The Story So Far", "Chapter II · Stories Yet Unfoldin
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(os.path.dirname(HERE), "assets")
-with open(os.path.join(HERE, "hero.jpg"), "rb") as fh:
-    hero_b64 = base64.b64encode(fh.read()).decode()
-with open(os.path.join(HERE, "footer.jpg"), "rb") as fh:
-    foot_b64 = base64.b64encode(fh.read()).decode()
+hero_b64, foot_b64, tree_b64 = art("hero"), art("footer"), art("tree")   # only winter has a tree
 
 _ttf = {}
 def ttf(key):
@@ -46,7 +46,7 @@ def width(key, text, size, letter_spacing=0.0):
     return total
 
 # Palette pulled from the illustration: sun-bleached cream, window-light gold, olive frames.
-PAL = {
+AUTUMN = {
  "dark": dict(
    bg0="#121210", bg1="#1b180e", bg2="#0d1413",
    blob1="#c9a227", blob2="#f2e173", blob3="#2f6b62", blob4="#e8c872",
@@ -58,7 +58,8 @@ PAL = {
    border="#e8d98a", borderO=".20", grainO=".045", cursor="#e4cf5a", imgBottom=".35",
    imgTint="0.97 0 0 0 0  0 0.93 0 0 0  0 0 0.84 0 0  0 0 0 1 0",
    footText="#fbf3d4", footMono="#b3a670",
-   footGlow="#c2410c", footGlowO=".20", footToneR="0 .55 .92", footToneG="0 .45 .76", footToneB="0 .32 .55"),
+   footGlow="#c2410c", footGlowO=".20", footToneR="0 .55 .92", footToneG="0 .45 .76", footToneB="0 .32 .55",
+   chap2="#a0a741", mottle="#000", edge=RIM),
  "light": dict(
    bg0="#fffdf3", bg1="#faf4d9", bg2="#f0f2df",
    blob1="#f2e173", blob2="#fbe2a8", blob3="#d8e3a4", blob4="#f5e9a8",
@@ -70,8 +71,47 @@ PAL = {
    border="#8a7a1a", borderO=".18", grainO=".03", cursor="#a8841a", imgBottom=".55",
    imgTint="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0",
    footText="#3b340c", footMono="#857a45",
-   footGlow="#fbd09a", footGlowO=".45", footToneR="0 1", footToneG="0 1", footToneB="0 1"),
+   footGlow="#fbd09a", footGlowO=".45", footToneR="0 1", footToneG="0 1", footToneB="0 1",
+   chap2="#6f7a1a", mottle="#b08a4a", edge="#bfae7c"),
 }
+
+# Winter, from pictures/winter: festival-night violet, lantern pink, snow blue.
+WINTER = {
+ "dark": dict(
+   bg0="#0f1020", bg1="#18152d", bg2="#0b1526",
+   blob1="#7a5cc9", blob2="#f29bb5", blob3="#2a5a8f", blob4="#b9a4f2",
+   blob1o=".34", blob2o=".14", blob3o=".34", blob4o=".12",
+   name0="#ffffff", name1="#ebe6ff", name2="#b9a8ff", nameGlow="#8a6fe0", glowO=".55",
+   over="#c4b6ff", tag="#ece8ff",
+   pillStroke="#8f7fd6", pillFill="#8a6fe0", pillFillO=".16", pillText="#e2dcff",
+   dust="#f4f0ff", dustO="1", spark="#ffe9f1",
+   border="#b9b4f0", borderO=".22", grainO=".045", cursor="#b9a8ff", imgBottom=".35",
+   imgTint="0.95 0 0 0 0  0 0.93 0 0 0  0 0 0.97 0 0  0 0 0 1 0",
+   footText="#eef1ff", footMono="#8f9bc4",
+   footGlow="#5b7fd0", footGlowO=".20", footToneR="0 .40 .72", footToneG="0 .47 .80", footToneB="0 .60 .96",
+   chap2="#7fb6e8", mottle="#000", edge=RIM,
+   # the tree's own blue is lost on a night page, so there it is frosted: one pale colour, as dense as it was dark
+   frost="0 0 0 0 .78  0 0 0 0 .84  0 0 0 0 1  -.36 -1.22 -.12 0 1.64", treeO=".8"),
+ "light": dict(
+   bg0="#fbfaff", bg1="#f1eefb", bg2="#eaf2fb",
+   blob1="#d9cdf7", blob2="#fbd3df", blob3="#cfe3f7", blob4="#e6dcfb",
+   blob1o=".55", blob2o=".60", blob3o=".55", blob4o=".70",
+   name0="#2a2350", name1="#4a3d8f", name2="#7a5fc8", nameGlow="#cdbdf7", glowO=".75",
+   over="#5d4fa3", tag="#3a3170",
+   pillStroke="#a99ad9", pillFill="#7a5fc8", pillFillO=".10", pillText="#463a85",
+   dust="#b9a6ea", dustO=".55", spark="#8b73d6",
+   border="#6a5cb0", borderO=".18", grainO=".03", cursor="#7a5fc8", imgBottom=".55",
+   imgTint="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0",
+   footText="#2a2350", footMono="#7c7aa5",
+   footGlow="#cfe0fb", footGlowO=".45", footToneR="0 1", footToneG="0 1", footToneB="0 1",
+   chap2="#4a86c8", mottle="#6a7ab0", edge="#b4b6d6",
+   # on white paper the tree keeps its colours; only its white ground is let go
+   frost="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  -.36 -1.22 -.12 0 1.64", treeO=".9"),
+}
+PAL = {"autumn": AUTUMN, "winter": WINTER}[SEASON]
+# where the footer's picture sits: its width (pinned to the left edge, 380 high) and how far back from its right
+# edge it starts to fade - winter's girl is right of the middle of her picture, so it stays whole until past her face
+FOOT_W, FOOT_FADE = {"autumn": (485, 330), "winter": (520, 125)}[SEASON]
 
 FADE_OUT = smooth_fade()
 
@@ -280,8 +320,7 @@ def chapter(theme, title):
     """A chapter opener: the title hand-written between two rules that fade out to the page's edges, a slowly
     turning star at the inner end of each.  The Caveat subset has no middle dot, so the one between the parts of a
     title is drawn; the part before it is inked in the accent colour."""
-    c1 = "#e4cf5a" if theme == "dark" else "#a8841a"
-    c2 = "#a0a741" if theme == "dark" else "#6f7a1a"
+    c1, c2 = PAL[theme]["name2"], PAL[theme]["chap2"]
     size, base, mid, dot_gap, pad = 44, 47, 34, 34, 36
     parts = title.split(" · ")
     w = sum(width("caveat", t, size) for t in parts) + dot_gap * (len(parts) - 1)
@@ -315,7 +354,8 @@ def chapter(theme, title):
 SWING = f"{EASE};{EASE}"          # keySplines for a there-and-back animation (values a;b;a)
 
 def leaves(w, h, seed=21):
-    """Maple leaves drifting down: each one falls, sways side to side, rocks with the sway and flips over.
+    """Maple leaves (in winter, snow crystals) drifting down: each one falls, sways side to side, rocks with the
+    sway and flips over.
     Three depths - small faint far leaves, mid leaves, and a few big soft-focus ones up close."""
     rnd = random.Random(seed)
     layers = ["far"] * 3 + ["mid"] * 7 + ["near"] * 2
@@ -388,29 +428,51 @@ def paper_sheet(x0, y0, x1, y1, depth=.38, seed=101):
     outline = "M" + " L".join(f"{x:.1f},{y:.1f}" for x, y in pts) + " Z"
     return outline, line(rip), line(inner), line(rip + inner[::-1])
 
+# the lights on the tree that twinkle: (x, y) as fractions of tree.jpg, picked off its brightest bulbs
+TREE_LIGHTS = [(.50, .31), (.53, .41), (.46, .52), (.36, .60), (.50, .66), (.57, .69), (.77, .55), (.76, .77),
+               (.60, .47), (.33, .82), (.54, .86), (.88, .38), (.21, .70), (.70, .90)]
+
+def lit_tree(p, x, foot, w=250, h=318):
+    """Winter's extra picture (tree.jpg, 500x636): the tree hung with lights, growing up from the foot of the last
+    page between the picture and the words.  Its white ground is turned to nothing (alpha from darkness, the
+    `frost` matrix), its tip fades in under where the passage above it was cut off, and its bulbs twinkle."""
+    y = foot - h
+    defs = (f'<filter id="frost" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="{p["frost"]}"/></filter>'
+            f'<linearGradient id="treeTop" gradientUnits="userSpaceOnUse" x1="0" y1="{y}" x2="0" y2="{y + 46}">{smooth_fade(fade_in=True)}</linearGradient>'
+            f'<mask id="treeMask"><rect x="{x}" y="{y}" width="{w}" height="{h}" fill="url(#treeTop)"/></mask>')
+    rnd = random.Random(5)
+    lights = "".join(
+        f'<g transform="translate({x + fx * w:.0f} {y + fy * h:.0f})"><path d="{star(rnd.uniform(3, 5.5))}" fill="{p["spark"]}">'
+        f'<animate attributeName="opacity" values="0;1;0" dur="{rnd.uniform(2.4, 4.2):.1f}s" begin="{-rnd.uniform(0, 4):.1f}s" repeatCount="indefinite"/>'
+        f'</path></g>' for fx, fy in TREE_LIGHTS)
+    return defs, (f'<g mask="url(#treeMask)" opacity="{p["treeO"]}"><image href="data:image/jpeg;base64,{tree_b64}" x="{x}" y="{y}" '
+                  f'width="{w}" height="{h}" filter="url(#frost)"/></g><g class="mo">{lights}</g>')
+
 def footer(theme):
     p = PAL[theme]
     dark = theme == "dark"
     css = "".join(fontface(k) for k in ("caveat", "jbmono")) + BASE_CSS
     FW, FH = 1200, 380
-    IW = 485                      # footer.jpg is 970x760 -> 485x380, pinned to the left edge
+    IW = FOOT_W                   # footer.jpg at half its size, pinned to the left edge
     TR = FW - 100                 # the text's right edge, clear of the rip
     # the sheet sits a few px in from the lower right, leaving room for the shadow it casts
     outline, rip, inner, core = paper_sheet(1, 1, FW - 7, FH - 8)
     # the rip: the paper's pale core along it, its frayed edge, and a faint shadow where the core lifts
-    rim, coreO, rimO, shadeO = ("#fff3c4", ".16", ".35", ".4") if dark else ("#ffffff", ".85", "1", ".12")
+    rim, coreO, rimO, shadeO = (RIM, ".16", ".35", ".4") if dark else ("#ffffff", ".85", "1", ".12")
     # the paper itself: its fine tooth lit from the upper left, a faint mottle, and the cut edge; the picture is
     # printed over the tooth, so it stays sharp and the paper only shows through where it fades out
-    toothO, mottle, mottleO = (".22", "#000", ".14") if dark else (".16", "#b08a4a", ".07")
-    edge, edgeO, dropO = ("#fff3c4", ".14", ".6") if dark else ("#bfae7c", ".7", ".22")
+    toothO, mottleO = (".22", ".14") if dark else (".16", ".07")
+    edgeO, dropO = (".14", ".6") if dark else (".7", ".22")
+    mottle, edge = p["mottle"], p["edge"]
     foot_label = esc(FOOT_LINE)
+    tree_defs, tree = lit_tree(p, 508, FH) if tree_b64 else ("", "")
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {FW} {FH}" width="{FW}" height="{FH}" role="img" aria-label="{foot_label}">
 <title>{foot_label}</title>
 <defs>
 <style><![CDATA[{css}]]></style>
 <clipPath id="fcard"><path d="{outline}"/></clipPath>
 <linearGradient id="fbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{p['bg1']}"/><stop offset=".5" stop-color="{p['bg0']}"/><stop offset="1" stop-color="{p['bg2']}"/></linearGradient>
-<linearGradient id="ffade" gradientUnits="userSpaceOnUse" x1="{IW-330}" y1="0" x2="{IW}" y2="0">
+<linearGradient id="ffade" gradientUnits="userSpaceOnUse" x1="{IW-FOOT_FADE}" y1="0" x2="{IW}" y2="0">
 {FADE_OUT}
 </linearGradient>
 <mask id="fmask"><rect x="0" y="0" width="{IW}" height="{FH}" fill="url(#ffade)"/></mask>
@@ -432,7 +494,7 @@ def footer(theme):
 <filter id="ftone" color-interpolation-filters="sRGB"><feComponentTransfer>
   <feFuncR type="table" tableValues="{p['footToneR']}"/><feFuncG type="table" tableValues="{p['footToneG']}"/><feFuncB type="table" tableValues="{p['footToneB']}"/>
 </feComponentTransfer></filter>
-{leaf_def()}
+{leaf_def()}{tree_defs}
 {GRAIN}
 </defs>
 <path d="{outline}" transform="translate(3 5)" fill="#000" opacity="{dropO}" filter="url(#drop)"/>
@@ -445,7 +507,7 @@ def footer(theme):
 </g>
 <rect width="{FW}" height="{FH}" fill="{mottle}" opacity="{mottleO}" filter="url(#mottle)"/>
 <rect width="{FW}" height="{FH}" opacity="{toothO}" filter="url(#tooth)"/>
-<image href="data:image/jpeg;base64,{foot_b64}" x="0" y="0" width="{IW}" height="{FH}" preserveAspectRatio="xMidYMid slice" mask="url(#fmask)" filter="url(#ftone)"/>
+<image href="data:image/jpeg;base64,{foot_b64}" x="0" y="0" width="{IW}" height="{FH}" preserveAspectRatio="xMidYMid slice" mask="url(#fmask)" filter="url(#ftone)"/>{tree}
 {leaves(FW, FH)}
 <rect width="{FW}" height="{FH}" filter="url(#grain)" opacity="{p['grainO']}"/>
 <text x="{TR}" y="196" text-anchor="end" class="foot-en" fill="{p['footText']}">{FOOT_LINE}</text>

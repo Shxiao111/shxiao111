@@ -7,10 +7,13 @@ Standard library only; imported by gen_hero.py and gen_cards.py.
 """
 import re
 
+from common import SEASON
+
 R = 8            # hole radius
 PITCH = 40       # centre-to-centre spacing
 CX = 26          # inset from the punched edge
 MARGIN = 36      # keep clear of the rounded corners
+RIM = {"autumn": "#fff3c4", "winter": "#dbe4ff"}[SEASON]   # the light a cut edge catches on the dark theme
 
 
 def hole_ys(h):
@@ -40,8 +43,8 @@ def punch(svg, dark, side="left"):
         # the page behind is as dark as the card, so light the cut instead: a thin rim on the paper
         # and the lower inner wall catching the same top-left light that casts the shadow
         ring = "".join(f'<circle cx="{cx:.0f}" cy="{y:.0f}" r="{R + .6}"/>' for y in ys)
-        shade += (f'<g fill="none" stroke="#fff3c4" stroke-opacity=".30" stroke-width="1.2">{ring}</g>'
-                  f'<g fill="#fff3c4" opacity=".22">{crescent(155)}</g>')
+        shade += (f'<g fill="none" stroke="{RIM}" stroke-opacity=".30" stroke-width="1.2">{ring}</g>'
+                  f'<g fill="{RIM}" opacity=".22">{crescent(155)}</g>')
     return (svg[:head]
             + f'<defs><clipPath id="punch"><path clip-rule="evenodd" d="M0,0 H{w:.0f} V{h:.0f} H0 Z {cuts}"/></clipPath></defs>'
             + f'<g clip-path="url(#punch)">{svg[head:tail]}</g>'

@@ -10,10 +10,10 @@ on:
       - ".github/workflows/cards.yml"
       - "scripts/gen_cards.py"
       - "scripts/common.py"
-      - "scripts/stats.jpg"
-      - "scripts/works.jpg"
+      - "scripts/art/**"
       - "scripts/fonts.json"
       - "scripts/maple.py"
+      - "scripts/winter.py"
       - "scripts/paper.py"
       - "scripts/sunlight.py"
 
@@ -37,6 +37,7 @@ jobs:
           python-version: "3.12"
 
       # first, so gen_cards.py can frame it as the contributions card; dots in maple colours, ember to vermilion
+      # (autumn's: gen_cards.py swaps in the colours of whichever season common.py has in wear)
       - name: generate contribution snake
         uses: Platane/snk/svg-only@d8f6715049803e982ee5ff501b6b9b7d5deeb09b # v3.5.0
         with:

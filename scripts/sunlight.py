@@ -7,9 +7,16 @@ glides sideways and fades out again, staggered so the pattern keeps shifting.
 Halos: soft radial glows with a faint ring that slowly swell, dim and drift.
 Dark theme: screen-blended warm glow (black shade bands).  Light theme: light only, a pale warm white laid over the
 paper that brightens it; no multiply and no shade, which read as stains and shadows on the light background.
+The light takes the season's colour (TINT): autumn's low gold sun, winter's snow light and lantern glow.
 Standard library only; imported by gen_hero.py and gen_cards.py.
 """
 import random
+
+from common import SEASON
+
+# (dark theme, light theme) colours of the shafts and of the halos
+TINT = {"autumn": dict(ray=("#ffe9a8", "#fae288"), halo=("#ffe3a0", "#fffdf2")),
+        "winter": dict(ray=("#cfdcff", "#ffffff"), halo=("#ffd3e2", "#fff6fa"))}[SEASON]
 
 SKEW = 22          # degrees each band leans
 DRIFT = 90         # px each band glides, in the light's direction, over its lifetime
@@ -30,11 +37,11 @@ def light_rays(uid, x_from, x_to, h, dark, from_left=True, seed=1, count=4, span
     sign = 1 if from_left else -1
     rnd = random.Random(seed)
     if dark:
-        light, light_blend, light_peak = "#ffe9a8", "screen", (.30, .42)
+        light, light_blend, light_peak = TINT["ray"][0], "screen", (.30, .42)
         shade, shade_peak = "#000", (.30, .40)
     else:
         # Soft warm golden afternoon sunlight: gentle sheen that warms the books without bleaching
-        light, light_blend, light_peak = "#fae288", "normal", (.14, .22)
+        light, light_blend, light_peak = TINT["ray"][1], "normal", (.14, .22)
         shade, shade_peak = None, None
 
     def fall(name, color):
@@ -71,7 +78,7 @@ def light_rays(uid, x_from, x_to, h, dark, from_left=True, seed=1, count=4, span
 def halo(uid, glows, dark):
     """Defs and body for soft halos.  `glows` is a list of (cx, cy, r, ring): each glow breathes (grows ~12% and
     dims) and drifts a little on its own slow cycle; `ring` adds the faint ring a bright light throws around itself."""
-    color, blend, core = ("#ffe3a0", "screen", .55) if dark else ("#fffdf2", "normal", .85)
+    color, blend, core = (TINT["halo"][0], "screen", .55) if dark else (TINT["halo"][1], "normal", .85)
     ease = ".45 0 .55 1;.45 0 .55 1"
     defs = (f'<radialGradient id="{uid}Glow"><stop offset="0" stop-color="{color}"/>'
             f'<stop offset=".3" stop-color="{color}" stop-opacity=".62"/><stop offset=".65" stop-color="{color}" stop-opacity=".2"/>'

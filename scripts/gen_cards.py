@@ -7,12 +7,12 @@ dist/{stats,shelf,toc,works,colophon}-{dark,light}.svg.
 If Platane/snk has already left dist/snake-{dark,light}.svg there, they are framed as the contributions card
 (a local run without them just skips it).
 Only the standard library is used. Fonts are embedded from scripts/fonts.json (which also carries their advance
-widths, for measuring text), the panel illustration from scripts/stats.jpg (see prep_images.py).
+widths, for measuring text), the illustrations from scripts/art/<season>/ (see prep_images.py; common.SEASON picks
+the season, and with it the palettes and what stands in the bookshelf's vase).
 Repositories, stars, languages, commits, pull requests and issues count public work only, so a local run with a
 personal token matches the Actions run.  The calendar and streaks are github's own contribution calendar, which
 includes private contributions only as far as the token's viewer may see them (or the profile shares them).
 """
-import base64
 import colorsys
 import datetime as dt
 import html
@@ -26,10 +26,13 @@ import unicodedata
 import urllib.error
 import urllib.request
 
-from common import CALM, EASE, FONTS, esc, fontface, smooth_fade, star_path, write_svg
-from maple import LEAF_COLORS, STALK_END, leaf_def
+from common import CALM, EASE, FONTS, SEASON, art, esc, fontface, smooth_fade, star_path, write_svg
 from paper import punch
 from sunlight import light_rays
+if SEASON == "winter":       # the sprig in the bookshelf's vase: maple, or plum blossom
+    from winter import MIST_CSS, PLUM_COLORS as LEAF_COLORS, PLUM_STALK as STALK_END, flake_def, ice, mist, plum_def as leaf_def
+else:
+    from maple import LEAF_COLORS, STALK_END, leaf_def
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -47,10 +50,7 @@ PREFACE = [                      # (icon, text): icons are "cap", "books" or "bl
 PREFACE_NAMES = ["BYR Docs", "Amano Tooko"]   # inked in the accent colour
 # --------------------------------------------------------------------------------------------------
 
-with open(os.path.join(HERE, "stats.jpg"), "rb") as fh:
-    STATS_IMG = base64.b64encode(fh.read()).decode()
-with open(os.path.join(HERE, "works.jpg"), "rb") as fh:
-    WORKS_IMG = base64.b64encode(fh.read()).decode()
+STATS_IMG, WORKS_IMG = art("stats"), art("works")
 
 # pull requests and issues through search, which can be limited to public repositories; user.pullRequests can't
 QUERY = """
@@ -241,7 +241,7 @@ def volume(r):
             "pushed": dt.date.fromisoformat(r["pushedAt"][:10]), **main_lang(r)}
 
 
-PAL = {
+AUTUMN = {
     "dark": dict(
         bg0="#1b180e", bg1="#121210", border="#3a3418",
         title="#fbf6e0", label="#c2b788", value="#fbf6e0", muted="#9a9068",
@@ -260,8 +260,11 @@ PAL = {
         # works-in-progress bookcase: the bunkobon jackets and the case's back panel
         glintO=".16",
         # the bookcase card is all picture and gold, with no dark panel beside it: at dusk it takes a deeper curve
-        worksTone=dict(toneR="0 .28 .66", toneG="0 .20 .49", toneB="0 .12 .32"),
-        paper="#efe6cf", ink="#2b2418", inkMuted="#6d604a", coverDim=".1", back0="#2b1e13", back1="#1a120b"),
+        worksTone=dict(toneR="0 .36 .86", toneG="0 .26 .64", toneB="0 .16 .42"),
+        paper="#efe6cf", ink="#2b2418", inkMuted="#6d604a", coverDim=".1", back0="#2b1e13", back1="#1a120b",
+        # the bookworm and its five shades of page: the colours cards.yml asks snk for, which snake_card swaps for
+        # another season's
+        snake=["#b99cff", "#2a221a", "#5c2a16", "#9c3a18", "#e0552a", "#ff9660"]),
     "light": dict(
         bg0="#fffdf3", bg1="#f8f2d8", border="#e6dcae",
         title="#3b340c", label="#6f6434", value="#3b340c", muted="#8f8454",
@@ -277,8 +280,54 @@ PAL = {
         ribbon0="#d9481c", ribbon1="#a82a10", ribbonShadeO=".16", gutter="#6b5a2a", gutterO=".16",
         nextPage="#efe4c3", flap0="#cdbb86", flap1="#fffbef", flap2="#f3e8cb", flap3="#e4d5aa", curlShadeO=".16", blossom="#dc7690",
         glintO=".22",
-        paper="#fffbf2", ink="#2b2418", inkMuted="#6d604a", coverDim="0", back0="#e6d0a8", back1="#d2b88a"),
+        paper="#fffbf2", ink="#2b2418", inkMuted="#6d604a", coverDim="0", back0="#e6d0a8", back1="#d2b88a",
+        snake=["#7c5cbf", "#f1e7d3", "#f8c89a", "#f08a4b", "#d9481c", "#a82a10"]),
 }
+
+# Winter: the snow's blue and the festival night's violet, pewter and silver foil for brass and gilt, and plum red
+# where autumn has vermilion.
+WINTER = {
+    "dark": dict(
+        bg0="#17152b", bg1="#0f1020", border="#2f2e58",
+        title="#eef0ff", label="#aab0d8", value="#eef0ff", muted="#7f85ae",
+        accent="#b9a8ff", accent2="#7fb6e8", track="#25254a",
+        langs=["#b9a8ff", "#7fb6e8", "#f29bb5", "#8fd6c8", "#dcd6ff", "#5f7fc8"],
+        grad0="#ffffff", grad1="#b9a8ff",
+        pbg0="#18152d", pbg1="#0f1020", pbg2="#0b1526", frame="#b9b4f0", frameO=".22", grainO=".045",
+        blobA="#6a5cc9", blobAo=".26", blobB="#2a5a8f", blobBo=".34", blobC="#4f8fd0", blobCo=".22",
+        spark="#eaf2ff", toneR="0 .42 .80", toneG="0 .46 .85", toneB="0 .52 .93",
+        wood="#5e4d48", wood0="#4b3c38", wood1="#2e2422", woodLine="#160f0e", wallShade="#000", wallShadeO=".55",
+        bookShade="#000", bookShadeO=".55", clothDim="0", foil="#dfe5f5", foilDark="#1c2238",
+        vase0="#7aa593", vase1="#3c5c50", metal0="#8d93a6", metal1="#484c5c", stem="#8a6a5c",
+        ribbon0="#e0506c", ribbon1="#9c2a44", ribbonShadeO=".35", gutter="#000", gutterO=".42",
+        nextPage="#1c1b36", flap0="#0b0b18", flap1="#55567e", flap2="#333452", flap3="#24253e", curlShadeO=".5", blossom="#f2a2b5",
+        glintO=".16",
+        # the works picture is nearly all white paper: four stops, so that falls to a moonlit blue while the
+        # linework and shading under it keep their depth
+        worksTone=dict(toneR="0 .08 .22 .52", toneG="0 .10 .29 .62", toneB="0 .18 .44 .88"),
+        paper="#e9e8f2", ink="#22243a", inkMuted="#62668a", coverDim=".1", back0="#1e1f33", back1="#12131f",
+        snake=["#f29bb5", "#1e1f3a", "#2c3a78", "#4763b8", "#7fa2ea", "#d3e2ff"], drift="#b9cbf9"),
+    "light": dict(
+        bg0="#fbfaff", bg1="#f0eefa", border="#d6d3ee",
+        title="#2a2350", label="#5c5a8a", value="#2a2350", muted="#8583ad",
+        accent="#6a55c0", accent2="#3d7fc4", track="#e4e2f5",
+        langs=["#6a55c0", "#3d7fc4", "#d9627f", "#3f9f8f", "#a99ad9", "#2a3f7a"],
+        grad0="#2a2350", grad1="#6a55c0",
+        pbg0="#f1eefb", pbg1="#fbfaff", pbg2="#eaf2fb", frame="#6a5cb0", frameO=".18", grainO=".03",
+        blobA="#d9cdf7", blobAo=".50", blobB="#cfe3f7", blobBo=".55", blobC="#fbd9e4", blobCo=".60",
+        spark="#8b73d6", toneR="0 1", toneG="0 1", toneB="0 1",
+        wood="#d9cbb8", wood0="#c2b19b", wood1="#978673", woodLine="#5f5242", wallShade="#4a4a6a", wallShadeO=".20",
+        bookShade="#3a3a5a", bookShadeO=".22", clothDim="0", foil="#f2f5fc", foilDark="#2a3050",
+        vase0="#b3d0c1", vase1="#6f9483", metal0="#c5cad8", metal1="#7c8296", stem="#5a4034",
+        ribbon0="#d94a64", ribbon1="#a82a48", ribbonShadeO=".16", gutter="#4a4a7a", gutterO=".14",
+        nextPage="#e7e6f6", flap0="#b9b9d6", flap1="#ffffff", flap2="#efeffa", flap3="#dadaee", curlShadeO=".16", blossom="#dc7690",
+        glintO=".22",
+        paper="#fdfdff", ink="#22243a", inkMuted="#62668a", coverDim="0", back0="#dfe5ee", back1="#c5cfdd",
+        snake=["#d9627f", "#ebebf7", "#c9d6f3", "#93b2ea", "#5d80d2", "#3b4fa2"], drift="#8c9fe6"),
+}
+PAL = {"autumn": AUTUMN, "winter": WINTER}[SEASON]
+# px over which the stats picture fades in from its left edge: winter's girl stands close to that edge
+STATS_FADE = {"autumn": 230, "winter": 120}[SEASON]
 
 
 CSS = (fontface("outfit") + fontface("jbmono") +
@@ -286,6 +335,8 @@ CSS = (fontface("outfit") + fontface("jbmono") +
        ".m{font-family:'JetBrains Mono',monospace;font-weight:500}"
        "@keyframes bar{from{transform:scaleX(0)}to{transform:scaleX(1)}}"
        ".b{transform-origin:left;animation:bar 1.2s cubic-bezier(.2,.8,.2,1) .2s both}" + CALM)
+if SEASON == "winter":
+    CSS += MIST_CSS
 
 ICON = {
     "star": '<path d="M0,-6.5 L1.9,-2 L6.5,-1.7 L2.9,1.4 L4,6 L0,3.5 L-4,6 L-2.9,1.4 L-6.5,-1.7 L-1.9,-2 Z"/>',
@@ -433,8 +484,9 @@ def stats_panel(theme, d):
     for i, (val, label, sub, hot) in enumerate(big):
         x = 56 + i * 200
         fill = "url(#pgrad)" if hot else p["value"]
-        if hot:
-            body.append(f'<text x="{x}" y="172" class="t" font-size="56" letter-spacing="-1" fill="{p["accent"]}" opacity=".5" filter="url(#pglow)">{val}</text>')
+        if hot:   # a glow behind the number: lighter than the page on either theme, or it reads as a shadow
+            glow = p["accent"] if theme == "dark" else p["blobA"]
+            body.append(f'<text x="{x}" y="172" class="t" font-size="56" letter-spacing="-1" fill="{glow}" opacity=".5" filter="url(#pglow)">{val}</text>')
         body.append(f'<text x="{x}" y="172" class="t" font-size="56" letter-spacing="-1" fill="{fill}">{val}</text>')
         body.append(f'<text x="{x}" y="202" class="m" font-size="12.5" fill="{p["label"]}">{label}</text>')
         body.append(f'<text x="{x}" y="222" class="m" font-size="11" fill="{p["muted"]}">{sub}</text>')
@@ -461,6 +513,14 @@ def stats_panel(theme, d):
     # top slice of one long shaft that carries on over the seam (see PAIR_H)
     sun_defs, sun = light_rays("sunS", 30, W - 60, H, theme == "dark", from_left=False, seed=9, count=4,
                                span=PAIR_H, y0=0)
+    frost, fog, wrap = "", "", ("", "")
+    if SEASON == "winter":
+        # no low sun in winter: the panel is a cold pane.  Frost builds up round its edges, thinning out where the
+        # picture comes in with ice of its own; and now and then the whole pane mists over, and clears
+        ice_defs, wash, frost = ice("iceS", W, H, theme == "dark", seed=11, fade=(ix, ix + STATS_FADE))
+        frost = wash + frost
+        fog_defs, fog = mist("mistS", "pall", W, H, theme == "dark", seed=2)
+        sun_defs, sun, wrap = ice_defs + fog_defs, "", ('<g id="pall">', "</g>")
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="github stats of {esc(LOGIN)}">
 <defs><style><![CDATA[{CSS}]]></style>
 <clipPath id="pcard"><rect width="{W}" height="{H}" rx="28" ry="28"/></clipPath>
@@ -468,27 +528,27 @@ def stats_panel(theme, d):
 <linearGradient id="pgrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="{p['grad0']}"/><stop offset="1" stop-color="{p['grad1']}"/></linearGradient>
 <linearGradient id="pbar" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="{p['accent2']}"/><stop offset="1" stop-color="{p['accent']}"/></linearGradient>
 <linearGradient id="pline" gradientUnits="userSpaceOnUse" x1="56" y1="0" x2="636" y2="0"><stop offset="0" stop-color="{p['accent']}" stop-opacity=".7"/><stop offset="1" stop-color="{p['accent']}" stop-opacity="0"/></linearGradient>
-<linearGradient id="pfade" gradientUnits="userSpaceOnUse" x1="{ix}" y1="0" x2="{ix+230}" y2="0">{smooth_fade(fade_in=True)}</linearGradient>
+<linearGradient id="pfade" gradientUnits="userSpaceOnUse" x1="{ix}" y1="0" x2="{ix+STATS_FADE}" y2="0">{smooth_fade(fade_in=True)}</linearGradient>
 <mask id="pmask"><rect x="{ix}" y="0" width="{IW}" height="{H}" fill="url(#pfade)"/></mask>
 <filter id="pblur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="45"/></filter>
-<filter id="pglow" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="14"/></filter>
+<filter id="pglow" filterUnits="userSpaceOnUse" x="0" y="60" width="{ix}" height="200"><feGaussianBlur stdDeviation="14"/></filter>
 <filter id="ptint" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="table" tableValues="{p['toneR']}"/><feFuncG type="table" tableValues="{p['toneG']}"/><feFuncB type="table" tableValues="{p['toneB']}"/></feComponentTransfer></filter>
 <filter id="pgrain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
 {sun_defs}
 </defs>
-<g clip-path="url(#pcard)">
+<g clip-path="url(#pcard)">{wrap[0]}
 <rect width="{W}" height="{H}" fill="url(#pbg)"/>
 <g filter="url(#pblur)">
 <ellipse cx="300" cy="60" rx="380" ry="170" fill="{p['blobA']}" opacity="{p['blobAo']}"><animate attributeName="cx" values="300;400;300" dur="18s" repeatCount="indefinite"/></ellipse>
 <ellipse cx="160" cy="470" rx="320" ry="140" fill="{p['blobB']}" opacity="{p['blobBo']}"/>
 <ellipse cx="820" cy="300" rx="240" ry="220" fill="{p['blobC']}" opacity="{p['blobCo']}"><animate attributeName="rx" values="240;290;240" dur="15s" repeatCount="indefinite"/></ellipse>
-</g>
+</g>{frost}
 <image href="data:image/jpeg;base64,{STATS_IMG}" x="{ix}" y="0" width="{IW}" height="{H}" preserveAspectRatio="xMidYMid slice" mask="url(#pmask)" filter="url(#ptint)"/>
 {sun}
 <g class="mo">{sparks}</g>
 <rect width="{W}" height="{H}" filter="url(#pgrain)" opacity="{p['grainO']}"/>
 <text x="56" y="84" class="m" font-size="13" letter-spacing="2.5" fill="{p['accent']}">github stats</text>
-{"".join(body)}
+{"".join(body)}{wrap[1]}{fog}
 <rect x="1" y="1" width="{W-2}" height="{H-2}" rx="27" fill="none" stroke="{p['frame']}" stroke-opacity="{p['frameO']}" stroke-width="1.5"/>
 </g>
 </svg>'''
@@ -556,7 +616,8 @@ def spine_trim(style, x, y, w, foil, ornament, vol_idx=0):
     return ribs + trim
 
 def vase(p, cx, base):
-    """A celadon bud vase with a sprig of maple that sways a little, and now and then drops a leaf on the shelf."""
+    """A celadon bud vase with a sprig that sways a little - maple, or in winter plum blossom - and now and then
+    drops a leaf or a flower on the shelf."""
     rnd = random.Random(3)
     mouth = base - 54
     stems = ["M0,4 C-3,-22 -14,-44 -30,-66", "M1,4 C4,-26 10,-52 20,-86", "M0,4 C2,-14 0,-28 8,-44"]
@@ -638,7 +699,7 @@ def shelf_card(theme, d):
     """The year's writing as a shelf of books: each repository committed to is a set of matching volumes, titled on
     its first spine and bound in its main language's cloth.  A set has as many volumes as the square root of its
     commits earns it (one at least), so a year spent in one repository still leaves the others their place.
-    A bookend and a vase of maple close the row."""
+    A bookend and a vase with the season's sprig close the row."""
     p = PAL[theme]
     W, H = 1200, SHELF_H
     dark = theme == "dark"
@@ -785,7 +846,9 @@ def shelf_card(theme, d):
     # as one band running over the seam; `clip` keeps a shaft off the card's rounded corners
     sun_defs, sun = light_rays("sunShelf", 30, W - 60, H, dark, from_left=False, seed=9, count=4,
                                span=PAIR_H, y0=STATS_H, clip="sunS")
-    glow_color = "#e4cf5a" if dark else "#f2e173"
+    if SEASON == "winter":       # no low sun in winter, and nothing in its place: the shelf is indoors
+        sun_defs, sun = "", ""
+    glow_color = p["accent"] if dark else p["blobA"]
     glow_op = ".10" if dark else ".22"
     ambient = f'<ellipse cx="860" cy="170" rx="340" ry="110" fill="{glow_color}" opacity="{glow_op}" filter="url(#shelfGlow)"/>'
 
@@ -907,6 +970,12 @@ def toc_entry(p, x0, x1, y, num, name, value, sub, t):
 
 
 BLOSSOM_PETAL = "M0,0 C-3.3,-2.4 -3.5,-6.6 -1.3,-8.2 L0,-6.9 L1.3,-8.2 C3.5,-6.6 3.3,-2.4 0,0 Z"   # notched at the tip
+# what drifts down the works card and across its covers: blossom petals, or in winter snow crystals - as (the element
+# and what it draws, the crystal for <defs>, its size beside a petal's)
+if SEASON == "winter":
+    DRIFT, DRIFT_DEF, DRIFT_K = ("use", 'href="#flake"'), flake_def("flake"), .6
+else:
+    DRIFT, DRIFT_DEF, DRIFT_K = ("path", f'd="{BLOSSOM_PETAL}"'), "", 1
 
 
 def preface_icon(kind, p):
@@ -1088,7 +1157,7 @@ def wrap_blurb(text, size, max_w):
 
 def wash(p, v, base, y0, y1):
     """The cover art between y0 and y1: a watercolour wash in the language's colour, laid on a diagonal from the
-    lower left to the upper right with a few splatters, and cherry petals drifting down across it.  Seeded by the
+    lower left to the upper right with a few splatters, and cherry petals (in winter, snow) drifting down across it.  Seeded by the
     repository's name, so each volume keeps its picture from day to day."""
     cw = COVER_W
     rnd = random.Random(v["name"])
@@ -1107,8 +1176,8 @@ def wash(p, v, base, y0, y1):
         x0, dur, beg = rnd.uniform(30, cw - 60), rnd.uniform(11, 16), -rnd.uniform(0, 14)
         petals.append(f'<g class="mo"><animateTransform attributeName="transform" type="translate" values="{x0:.0f} {y0 - 30:.0f};{x0 + 40:.0f} {(y0 + y1) / 2:.0f};{x0 + 10:.0f} {y1 + 10}" '
                       f'dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/>'
-                      f'<path d="{BLOSSOM_PETAL}" transform="scale(1.5)" fill="{p["blossom"]}" opacity=".85">'
-                      f'<animateTransform attributeName="transform" type="rotate" values="0;200;360" additive="sum" dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/></path></g>')
+                      f'<{DRIFT[0]} {DRIFT[1]} transform="scale({1.5 * DRIFT_K:g})" fill="{p.get("drift", p["blossom"])}" opacity=".85">'
+                      f'<animateTransform attributeName="transform" type="rotate" values="0;200;360" additive="sum" dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/></{DRIFT[0]}></g>')
     return (f'<g filter="url(#wash)">{"".join(blobs)}</g><g fill="{base}" opacity=".45">{dots}</g>', "".join(petals))
 
 
@@ -1202,9 +1271,15 @@ def cover(p, i, v, today, shade=0, number=1, band=0):
 
 WORKS_W = 1200             # as wide as the other cards
 WORKS_TUCK = 60            # how far the picture runs on under the bookcase, so its fade ends behind it
-# the golden tree's colours down the picture's right edge, top to bottom (sampled from works.jpg): the card is painted
-# with them, so the picture fades into its own light
-WORKS_GOLD = ["#fba02e", "#f79c3d", "#f7bb78"]
+# the works card is painted with its picture's own light, so the picture fades into it: `bg` is the picture's colours
+# down its right edge, top to bottom (sampled from works.jpg), then the bookcase's wood and back panel, the glow, and
+# what drifts down across the card - autumn's golden tree and its white blossom, winter's snow sky and snow
+WORKS = {
+    "autumn": dict(bg=["#fba02e", "#f79c3d", "#f7bb78"], wood0="#e2ae62", wood1="#b67a38", woodLine="#7a4a1c",
+                   back0="#f9e2a8", back1="#eec07a", glow="#ffe9a6", petal="#fffaf0", petalShade="#6b4a1a"),
+    "winter": dict(bg=["#f2f4f5", "#f8f8f8", "#d5dee0"], wood0="#b9c5d6", wood1="#8595ad", woodLine="#4a5670",
+                   back0="#e6ebf3", back1="#cbd5e3", glow="#ffffff", petal="#a9bdf4", petalShade="#5a6a8a"),
+}[SEASON]
 
 
 def tone(c, p):
@@ -1332,18 +1407,18 @@ def bookcase(p, d, rows, light=""):
 
 
 def works_card(theme, d):
-    """Chapter ii: Tooko under the golden tree, holding a red book to her chest (scripts/works.jpg), fading into a
-    two-shelf bookcase of the pinned repositories as bunkobon - the top shelf takes the odd one, and the case is two
-    or three books wide - with white petals drifting down across both.  The books keep their full size, so their
+    """Chapter ii: Tooko with a book in her arms (works.jpg: under the golden tree in autumn, crouched in the snow
+    in winter), fading into a two-shelf bookcase of the pinned repositories as bunkobon - the top shelf takes the odd
+    one, and the case is two or three books wide - with white petals, or snow, drifting down across both.  The books keep their full size, so their
     print stays legible."""
     p = dict(PAL[theme], **PAL[theme].get("worksTone", {}))
     vols = d["works"]
     half = (len(vols) + 1) // 2
     rows = [vols[:half], vols[half:]]
     dark = theme == "dark"
-    # the bookcase is made of the same light as the picture: honey-coloured wood and a pale gold back, toned with it
-    pw = dict(p, wood0=tone("#e2ae62", p), wood1=tone("#b67a38", p), woodLine=tone("#7a4a1c", p),
-              back0=tone("#f9e2a8", p), back1=tone("#eec07a", p))
+    # the bookcase is made of the same light as the picture (honey-coloured wood and a pale gold back in autumn,
+    # frosted blue in winter), toned with it
+    pw = dict(p, **{k: tone(WORKS[k], p) for k in ("wood0", "wood1", "woodLine", "back0", "back1")})
     rnd = random.Random(21)
     # clean and serene interior without muddy dappled shade
     light = ""
@@ -1353,17 +1428,17 @@ def works_card(theme, d):
     cx, cy = W - M - cw, M
     IW = cx + WORKS_TUCK         # works.jpg (930x1092), pinned to the top left and cut to fill up to the bookcase
     petals = []
-    for k in range(7):   # white blossom drifting from the tree, down and to the right, across the bookcase
+    for k in range(7):   # white blossom drifting from the tree (or snow), down and to the right, across the bookcase
         x0, dur = rnd.uniform(-40, W * .55), rnd.uniform(14, 22)
         beg, s, spin = -rnd.uniform(0, dur), rnd.uniform(1.6, 2.6), rnd.uniform(0, 360)
         petals.append(f'<g opacity="{rnd.uniform(.55, .85):.2f}"><animateTransform attributeName="transform" type="translate" '
                       f'values="{x0:.0f} -20;{x0 + W * .22:.0f} {H * .5:.0f};{x0 + W * .45:.0f} {H + 20}" dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/>'
-                      f'<path d="{BLOSSOM_PETAL}" transform="translate(1 2) scale({s:.2f})" fill="#6b4a1a" opacity=".25">'
+                      f'<{DRIFT[0]} {DRIFT[1]} transform="translate(1 2) scale({s * DRIFT_K:.2f})" fill="{WORKS["petalShade"]}" opacity=".25">'
                       f'<animateTransform attributeName="transform" type="rotate" values="{spin:.0f};{spin + 220:.0f};{spin + 360:.0f}" additive="sum" '
-                      f'dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/></path>'
-                      f'<path d="{BLOSSOM_PETAL}" transform="scale({s:.2f})" fill="#fffaf0">'
+                      f'dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/></{DRIFT[0]}>'
+                      f'<{DRIFT[0]} {DRIFT[1]} transform="scale({s * DRIFT_K:.2f})" fill="{WORKS["petal"]}">'
                       f'<animateTransform attributeName="transform" type="rotate" values="{spin:.0f};{spin + 220:.0f};{spin + 360:.0f}" additive="sum" '
-                      f'dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/></path></g>')
+                      f'dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/></{DRIFT[0]}></g>')
     css = (fontface("caveat") + ".h{font-family:'Caveat',cursive;font-weight:600}"
            "@keyframes up{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}"
            ".cv{animation:up .8s cubic-bezier(.3,.7,.4,1) both}"
@@ -1371,13 +1446,17 @@ def works_card(theme, d):
     label = esc(f"works in progress: Tooko holding a book beside a bookcase of {len(vols)} pinned repositories: "
                 f"{', '.join(v['name'] for v in vols) or 'none yet'}")
     wood0, wood1, b0, b1 = pw["wood0"], pw["wood1"], pw["back0"], pw["back1"]
-    gold = [tone(c, p) for c in WORKS_GOLD]
-    glow = tone("#ffe9a6", p)
+    gold = [tone(c, p) for c in WORKS["bg"]]
+    glow = tone(WORKS["glow"], p)
     # the tree's light: shafts of sun from the upper left, across the picture and the card behind the bookcase
     sun_defs, sun = light_rays("sunW", 80, W - 80, H, dark, seed=5, count=5)
+    fog, wrap = "", ("", "")
+    if SEASON == "winter":       # no low sun in winter: now and then the whole card mists over like a cold pane
+        sun_defs, fog = mist("mistW", "wall", W, H, dark, seed=6, delay=-15)
+        sun, wrap = "", ('<g id="wall">', "</g>")
 
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="{label}">'
-            + f'<defs><style><![CDATA[{CSS}{css}]]></style>{case_defs}'
+            + f'<defs><style><![CDATA[{CSS}{css}]]></style>{case_defs}{DRIFT_DEF}'
             f'<clipPath id="wcard"><rect width="{W}" height="{H}" rx="16"/></clipPath>'
             f'<linearGradient id="wbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{gold[0]}"/>'
             f'<stop offset=".5" stop-color="{gold[1]}"/><stop offset="1" stop-color="{gold[2]}"/></linearGradient>'
@@ -1410,7 +1489,7 @@ def works_card(theme, d):
             f'<stop offset=".5" stop-color="{glow}" stop-opacity=".12"/><stop offset="1" stop-color="{glow}" stop-opacity="0"/></radialGradient>'
             f'<linearGradient id="metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="{p.get("metal0", "#8a826c")}"/><stop offset="1" stop-color="{p.get("metal1", "#4a453a")}"/></linearGradient>'
             f'<filter id="wshade" x="-20%" y="-10%" width="140%" height="120%"><feGaussianBlur stdDeviation="5"/></filter></defs>'
-            + f'<g clip-path="url(#wcard)">'
+            + f'<g clip-path="url(#wcard)">{wrap[0]}'
             # the tree's light, all across the card: its colours, and soft patches of sun through the leaves
             f'<rect width="{W}" height="{H}" fill="url(#wbg)"/>'
             f'<g fill="{glow}" filter="url(#wglow)"><ellipse cx="{W * .62:.0f}" cy="{H * .18:.0f}" rx="260" ry="150" opacity=".55"/>'
@@ -1420,7 +1499,7 @@ def works_card(theme, d):
             + sun +   # behind the bookcase, so the light never dims the books' print
             f'<rect x="{cx + 8}" y="{cy + 12}" width="{cw}" height="{chh}" fill="#000" opacity=".35" filter="url(#caseShade)"/>'
             f'<g transform="translate({cx} {cy})">{case}<rect x="-10" width="120" height="{chh}" fill="url(#haze)"/></g>'
-            + '<g class="mo">' + "".join(petals) + "</g></g>"
+            + '<g class="mo">' + "".join(petals) + f"</g>{wrap[1]}{fog}</g>"
             f'<rect x="0.75" y="0.75" width="{W - 1.5}" height="{H - 1.5}" rx="16" fill="none" stroke="{p["border"]}" stroke-width="1.5"/></svg>')
 
 
@@ -1434,22 +1513,31 @@ def snake_card(theme, raw, d):
     vb = re.search(r'viewBox="([^"]+)"', raw).group(1)
     vx, vy, vw, vh = map(float, vb.split())
     inner = raw[raw.index(">", raw.index("<svg")) + 1:raw.rindex("</svg>")]
+    for autumn, mine in zip(AUTUMN[theme]["snake"], p["snake"]):   # snk was asked for autumn's colours
+        inner = inner.replace(autumn, mine)
+    wash = frost = ""
+    if SEASON == "winter":       # frost builds up round the bookworm's year
+        ice_defs, wash, frost = ice("iceN", W, H, theme == "dark", seed=3)
+        wash = (f'<defs>{ice_defs}<clipPath id="iceNC"><rect x="0.75" y="0.75" width="{W-1.5}" height="{H-1.5}" rx="16"/></clipPath></defs>'
+                f'<g clip-path="url(#iceNC)">{wash}</g>')
+        frost = f'<g clip-path="url(#iceNC)">{frost}</g>'
     scale = 20 / 16               # snk: 12px cells on a 16px pitch
     gx, gy = 48, 78               # top-left of the grid
     css = (fontface("outfit") + fontface("jbmono") +
            ".t{font-family:'Outfit',sans-serif;font-weight:800}"
            ".m{font-family:'JetBrains Mono',monospace;font-weight:500}" + CALM)
+    head = (f'<g transform="translate(58 34)" fill="{p["accent"]}">{ICON["star"]}</g>'
+            f'<text x="76" y="40" class="t" font-size="19" fill="url(#tgN)">the bookworm</text>'
+            f'<text x="{W-gx}" y="40" class="m" font-size="12" text-anchor="end" fill="{p["label"]}">{d["active_days"]} active days · last 12 months</text>')
+    grid = f'<svg x="{gx + vx*scale:.1f}" y="{gy + vy*scale:.1f}" width="{vw*scale:.1f}" height="{vh*scale:.1f}" viewBox="{vb}">{inner}</svg>'
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="contribution snake of {esc(LOGIN)}">'
             f'<defs><style><![CDATA[{css}]]></style>'
             f'<linearGradient id="bgN" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{p["bg0"]}"/><stop offset="1" stop-color="{p["bg1"]}"/></linearGradient>'
             f'<linearGradient id="tgN" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="{p["grad0"]}"/><stop offset="1" stop-color="{p["grad1"]}"/></linearGradient>'
             f'</defs>'
             f'<rect x="0.75" y="0.75" width="{W-1.5}" height="{H-1.5}" rx="16" fill="url(#bgN)" stroke="{p["border"]}" stroke-width="1.5"/>'
-            f'<g transform="translate(58 34)" fill="{p["accent"]}">{ICON["star"]}</g>'
-            f'<text x="76" y="40" class="t" font-size="19" fill="url(#tgN)">the bookworm</text>'
-            f'<text x="{W-gx}" y="40" class="m" font-size="12" text-anchor="end" fill="{p["label"]}">{d["active_days"]} active days · last 12 months</text>'
-            f'<svg x="{gx + vx*scale:.1f}" y="{gy + vy*scale:.1f}" width="{vw*scale:.1f}" height="{vh*scale:.1f}" viewBox="{vb}">{inner}</svg>'
-            f'</svg>')
+            # frost lies on the pane: over the year's cells (the glass's blue behind them), under the print
+            + (wash + grid + frost + head if frost else head + grid) + '</svg>')
 
 
 def colophon_card(theme, d):

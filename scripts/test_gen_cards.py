@@ -4,12 +4,15 @@ import contextlib
 import datetime as dt
 import io
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
 from unittest import mock
 
 import gen_cards
+from common import SEASON, SEASONS
 from gen_cards import streaks
 from paper import punch
 
@@ -142,7 +145,7 @@ class CardTests(unittest.TestCase):
         """snk's svgs are framed as the contributions card once, a second run leaves them alone, and a missing
         one (a local run without snk) is skipped."""
         raw = ('<svg viewBox="-16 -32 880 192" width="880" height="192" xmlns="http://www.w3.org/2000/svg">'
-               '<style>.c{fill:red}</style><rect class="c" x="0" y="0" width="12" height="12"/></svg>')
+               '<style>:root{--c1:#5c2a16}.c{fill:red}</style><rect class="c" x="0" y="0" width="12" height="12"/></svg>')
         with tempfile.TemporaryDirectory() as out, mock.patch.object(gen_cards, "OUT", out), \
                 contextlib.redirect_stdout(io.StringIO()):
             path = os.path.join(out, "snake-dark.svg")
@@ -157,7 +160,26 @@ class CardTests(unittest.TestCase):
             self.assertFalse(os.path.exists(os.path.join(out, "snake-light.svg")))
         ET.fromstring(framed)
         self.assertIn(">the bookworm<", framed)
+        # snk is asked for autumn's colours (cards.yml); the card wears the season's
+        self.assertIn(f"--c1:{gen_cards.PAL['dark']['snake'][2]}", framed)
         self.assertIn("42 active days · last 12 months", framed)
+
+    @unittest.skipIf(os.environ.get("SEASON_RERUN"), "already inside a season's own run")
+    def test_other_seasons(self):
+        """The season is fixed at import (common.SEASON), so each season not in wear gets a run of its own: these
+        tests again, and gen_hero's pages, which CI otherwise only builds for the season in wear."""
+        here = os.path.dirname(os.path.abspath(__file__))
+        pages = ("import xml.etree.ElementTree as ET, gen_hero as g\n"
+                 "for t in ('dark', 'light'):\n"
+                 "    for svg in (g.hero(t), g.footer(t), g.chapter(t, g.CHAPTERS[0])): ET.fromstring(svg)")
+        for season in SEASONS:
+            if season == SEASON:
+                continue
+            env = dict(os.environ, SEASON=season, SEASON_RERUN="1")
+            for cmd in (["-m", "unittest", "test_gen_cards"], ["-c", pages]):
+                with self.subTest(season=season, run=cmd[0]):
+                    run = subprocess.run([sys.executable, *cmd], cwd=here, env=env, capture_output=True, text=True)
+                    self.assertEqual(run.returncode, 0, run.stderr)
 
     def test_shelf_many_repositories(self):
         """shelf_card handles more than 34 repositories without crashing on empty candidates; the note counts them all."""

@@ -1,6 +1,7 @@
-"""Pieces shared by gen_hero.py and gen_cards.py: the embedded fonts, the four-point sparkle, the smoothstep fade
-and the easing curve.  Standard library only.
+"""Pieces shared by gen_hero.py and gen_cards.py: the season the profile wears, the embedded fonts, the four-point
+sparkle, the smoothstep fade and the easing curve.  Standard library only.
 """
+import base64
 import html
 import json
 import os
@@ -8,6 +9,23 @@ import os
 HERE = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(HERE, "fonts.json"), encoding="utf-8") as fh:
     FONTS = json.load(fh)
+
+# the season in wear: its art (scripts/art/<season>/, see prep_images.py), palettes and falling things.  To change
+# it, edit the default here, run gen_hero.py and commit assets/ (check.yml compares them byte for byte, so the
+# season can't follow the calendar by itself); SEASON=winter in the environment previews one without editing
+SEASONS = ("autumn", "winter")
+SEASON = os.environ.get("SEASON") or "autumn"
+if SEASON not in SEASONS:
+    raise SystemExit(f"SEASON={SEASON!r}: no such season, pick one of {', '.join(SEASONS)}")
+
+
+def art(name):
+    """A crop of the season's art, base64 for a data: url; None if this season has no such picture."""
+    path = os.path.join(HERE, "art", SEASON, f"{name}.jpg")
+    if not os.path.exists(path):
+        return None
+    with open(path, "rb") as fh:
+        return base64.b64encode(fh.read()).decode()
 
 EASE = ".45 0 .55 1"          # one keySplines segment; join it with ";" once per interval of the animation
 # for a reader who has asked for less motion: css animations are dropped, so each thing rests in its finished state,

@@ -2,5 +2,6 @@ dist/
 .DS_Store
 __pycache__/
 *.pyc
-# full-size source art lives at the repo root; only the crops in scripts/ are committed
+# full-size source art lives in pictures/<season>/; only the crops in scripts/art/ are committed
+/pictures/
 /*.jpg
