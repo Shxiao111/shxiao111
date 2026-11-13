@@ -33,7 +33,7 @@ from spring import BLOSSOM_PETAL
 if SEASON == "winter":       # the sprig in the bookshelf's vase: maple, plum blossom, cherry blossom, or hibiscus
     from winter import MIST_CSS, PLUM_COLORS as LEAF_COLORS, PLUM_STALK as STALK_END, flake_def, ice, mist, plum_def as leaf_def
 elif SEASON == "spring":
-    from spring import BLOSSOM_STALK as STALK_END, PETAL_COLORS as LEAF_COLORS, blossom_def as leaf_def
+    from spring import BLOSSOM_STALK as STALK_END, PETAL_COLORS as LEAF_COLORS, blossom_def as leaf_def, leaf_light
 elif SEASON == "summer":
     from summer import BLOSSOM_STALK as STALK_END, PETAL_COLORS as LEAF_COLORS, hibiscus_def as leaf_def, water_light
 else:
@@ -599,6 +599,9 @@ def stats_panel(theme, d):
         # where the frost goes in winter, so no ripple crosses her face
         sun_defs, frost = water_light("seaS", W, H, theme == "dark", seed=9)
         sun = ""
+    if SEASON == "spring":       # nor under the trees: the sun through their new leaves, under the picture likewise
+        sun_defs, frost = leaf_light("leafS", W, H, theme == "dark", seed=9)
+        sun = ""
     if SEASON == "winter":
         # no low sun in winter: the panel is a cold pane.  Frost builds up round its edges, thinning out where the
         # picture comes in with ice of its own; and now and then the whole pane mists over, and clears
@@ -938,6 +941,9 @@ def shelf_card(theme, d):
     ambient = f'<ellipse cx="860" cy="170" rx="340" ry="110" fill="{glow_color}" opacity="{glow_op}" filter="url(#shelfGlow)"/>'
     if SEASON == "summer":       # the same sea as the stats card above, on the wall behind the books: their print stays clear
         sun_defs, sea = water_light("seaShelf", W, H, dark, seed=4, clip="sunS")
+        ambient, sun = ambient + sea, ""
+    if SEASON == "spring":       # and the same leaves as over the stats card above
+        sun_defs, sea = leaf_light("leafShelf", W, H, dark, seed=4, clip="sunS")
         ambient, sun = ambient + sea, ""
 
     # Contact shadow at the base of the books
@@ -1368,7 +1374,7 @@ WORKS = {
     "winter": dict(bg=["#f2f4f5", "#f8f8f8", "#d5dee0"], wood0="#b9c5d6", wood1="#8595ad", woodLine="#4a5670",
                    back0="#e6ebf3", back1="#cbd5e3", glow="#ffffff", petal="#a9bdf4", petalShade="#5a6a8a"),
     "spring": dict(bg=["#d4f1b8", "#f9fef3", "#ffffff"], wood0="#e6dcae", wood1="#b3a56a", woodLine="#6a6032",
-                   back0="#f6fae2", back1="#dfecb8", glow="#fbffdc", petal="#fbc4d4", petalShade="#4a6a2a"),
+                   back0="#f6fae2", back1="#dfecb8", glow="#fbffdc", petal="#fffaf0", petalShade="#4a6a2a"),
     "summer": dict(bg=["#1f92fd", "#2194fe", "#f0feff"], wood0="#fbf8ee", wood1="#d9d2bc", woodLine="#8a8266",
                    back0="#eef7fd", back1="#cfe4f3", glow="#ffffff"),
 }[SEASON]
@@ -1549,6 +1555,10 @@ def works_card(theme, d):
         # against the sky, and in the dark theme's glow on both pages (this card is painted in its picture's blue, whatever the page)
         sun_defs, sun = halo("sunW", [(150, 150, 190, True), (cx - 70, 330, 150, True), (110, 520, 110, False),
                                       (cx - 150, 640, 90, False), (470, 60, 70, False)], True, strength=1.6)
+    if SEASON == "spring":
+        # she stands under the leaves themselves: their light, in the dark theme's glow on both pages and brighter
+        # (this card is painted in its picture's green, whatever the page)
+        sun_defs, sun = leaf_light("leafW", W, H, True, seed=5, strength=2)
     if SEASON == "winter":       # no low sun in winter: now and then the whole card mists over like a cold pane
         sun_defs, fog = mist("mistW", "wall", W, H, dark, seed=6, delay=-15)
         sun, wrap = "", ('<g id="wall">', "</g>")
