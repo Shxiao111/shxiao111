@@ -257,7 +257,7 @@ AUTUMN = {
         grad0="#ffffff", grad1="#e4cf5a",
         pbg0="#1b180e", pbg1="#121210", pbg2="#0d1413", frame="#e8d98a", frameO=".20", grainO=".045",
         blobA="#c9a227", blobAo=".26", blobB="#2f6b62", blobBo=".34", blobC="#8b6fb0", blobCo=".22",
-        spark="#fff2b0", toneR="0 .5 .9", toneG="0 .46 .82", toneB="0 .4 .7",
+        spark="#fff2b0", toneR="0 .5 .95", toneG="0 .48 .91", toneB="0 .45 .85",
         # bookshelf and contents page
         wood="#6b4a2a", wood0="#553820", wood1="#3a2613", woodLine="#1e1208", wallShade="#000", wallShadeO=".55",
         bookShade="#000", bookShadeO=".55", clothDim="0", foil="#ecd27a", foilDark="#2a1d0a",
@@ -267,8 +267,8 @@ AUTUMN = {
         # works-in-progress bookcase: the bunkobon jackets and the case's back panel
         glintO=".16",
         # the bookcase card's picture is most of the card, where the stats panel's is under half of it: at dusk it
-        # takes a deeper curve, and the card a night page (see works_card)
-        worksTone=dict(toneR="0 .36 .86", toneG="0 .26 .64", toneB="0 .16 .42"),
+        # takes a deeper curve
+        worksTone=dict(toneR="0 .43 .93", toneG="0 .38 .82", toneB="0 .33 .71"),
         paper="#efe6cf", ink="#2b2418", inkMuted="#6d604a", coverDim=".1", back0="#2b1e13", back1="#1a120b",
         # the bookworm and its five shades of page: the colours cards.yml asks snk for, which snake_card swaps for
         # another season's
@@ -303,7 +303,8 @@ WINTER = {
         grad0="#ffffff", grad1="#b9a8ff",
         pbg0="#18152d", pbg1="#0f1020", pbg2="#0b1526", frame="#b9b4f0", frameO=".22", grainO=".045",
         blobA="#6a5cc9", blobAo=".26", blobB="#2a5a8f", blobBo=".34", blobC="#4f8fd0", blobCo=".22",
-        spark="#eaf2ff", toneR="0 1", toneG="0 1", toneB="0 1",
+        spark="#eaf2ff", toneR="0 .45 .89", toneG="0 .475 .92", toneB="0 .53 .975",
+        worksTone=dict(toneR="0 .36 .8", toneG="0 .38 .83", toneB="0 .45 .93"),
         wood="#5e4d48", wood0="#4b3c38", wood1="#2e2422", woodLine="#160f0e", wallShade="#000", wallShadeO=".55",
         bookShade="#000", bookShadeO=".55", clothDim="0", foil="#dfe5f5", foilDark="#1c2238",
         vase0="#7aa593", vase1="#3c5c50", metal0="#8d93a6", metal1="#484c5c", stem="#8a6a5c",
@@ -341,7 +342,8 @@ SPRING = {
         grad0="#ffffff", grad1="#b4dc5a",
         pbg0="#171e0e", pbg1="#0f1610", pbg2="#0b1716", frame="#cfe69a", frameO=".20", grainO=".045",
         blobA="#6fa82a", blobAo=".26", blobB="#2a6f6a", blobBo=".34", blobC="#c9668a", blobCo=".22",
-        spark="#ffe3ec", toneR="0 1", toneG="0 1", toneB="0 1",
+        spark="#ffe3ec", toneR="0 .46 .91", toneG="0 .5 .94", toneB="0 .44 .86",
+        worksTone=dict(toneR="0 .36 .81", toneG="0 .41 .86", toneB="0 .34 .74"),
         wood="#6b4a2a", wood0="#553820", wood1="#3a2613", woodLine="#1e1208", wallShade="#000", wallShadeO=".55",
         bookShade="#000", bookShadeO=".55", clothDim="0", foil="#ecd27a", foilDark="#2a1d0a",
         vase0="#7aa593", vase1="#3c5c50", metal0="#8a826c", metal1="#4a453a", stem="#8a5a3c",
@@ -379,7 +381,8 @@ SUMMER = {
         grad0="#ffffff", grad1="#7cc8f5",
         pbg0="#0f1d2e", pbg1="#0c1622", pbg2="#0a1a1f", frame="#a9d6f5", frameO=".20", grainO=".045",
         blobA="#2a8fd6", blobAo=".26", blobB="#1f7a7a", blobBo=".34", blobC="#d9607c", blobCo=".20",
-        spark="#fff3c4", toneR="0 1", toneG="0 1", toneB="0 1",
+        spark="#fff3c4", toneR="0 .44 .88", toneG="0 .49 .93", toneB="0 .53 .97",
+        worksTone=dict(toneR="0 .33 .76", toneG="0 .4 .85", toneB="0 .48 .94"),
         wood="#6b4a2a", wood0="#553820", wood1="#3a2613", woodLine="#1e1208", wallShade="#000", wallShadeO=".55",
         bookShade="#000", bookShadeO=".55", clothDim="0", foil="#ecd27a", foilDark="#2a1d0a",
         vase0="#7aa593", vase1="#3c5c50", metal0="#8a826c", metal1="#4a453a", stem="#7a8a4c",
@@ -406,8 +409,8 @@ SUMMER = {
         paper="#fcfeff", ink="#1a2a3a", inkMuted="#5a6e84", coverDim="0", back0="#dcebf5", back1="#c2d9ea",
         snake=["#d9506c", "#e8f1f8", "#bfe0f7", "#7fc0ee", "#2f8fd6", "#145a9c"]),
 }
-# only autumn's pictures are toned down for the dark theme (toneR/G/B, worksTone): the other seasons' keep their
-# daylight on the night page
+# every season's pictures are toned down for the dark theme (toneR/G/B, and worksTone's deeper curve), toward its
+# own night's colour
 PAL = {"autumn": AUTUMN, "winter": WINTER, "spring": SPRING, "summer": SUMMER}[SEASON]
 # px over which the stats picture fades in from its left edge: winter's girl stands close to that edge
 STATS_FADE = {"autumn": 230, "winter": 120, "spring": 150, "summer": 150}[SEASON]
@@ -1531,12 +1534,11 @@ def works_card(theme, d):
     half = (len(vols) + 1) // 2
     rows = [vols[:half], vols[half:]]
     dark = theme == "dark"
-    # a palette with a dusk curve (worksTone: autumn's dark theme) gets a night page like the cards around it: the
-    # picture fades into the page's own dark, and the bookcase is the bookshelf card's dark wood
-    night = "worksTone" in PAL[theme]
-    # otherwise the bookcase is made of the same light as the picture (honey-coloured wood and a pale gold back in
-    # autumn, frosted blue in winter), toned with it
-    pw = p if night else dict(p, **{k: tone(WORKS[k], p) for k in ("wood0", "wood1", "woodLine", "back0", "back1")})
+    # the dark theme's card is a night page like the cards around it: the picture, on its dusk curve (worksTone),
+    # fades into the page's own dark, and the bookcase is the bookshelf card's dark wood.  On the light theme the
+    # bookcase is made of the same light as the picture (honey-coloured wood and a pale gold back in autumn, frosted
+    # blue in winter)
+    pw = p if dark else dict(p, **{k: tone(WORKS[k], p) for k in ("wood0", "wood1", "woodLine", "back0", "back1")})
     rnd = random.Random(21)
     # clean and serene interior without muddy dappled shade
     light = ""
@@ -1565,22 +1567,22 @@ def works_card(theme, d):
     label = esc(f"works in progress: Tooko holding a book beside a bookcase of {len(vols)} pinned repositories: "
                 f"{', '.join(v['name'] for v in vols) or 'none yet'}")
     wood0, wood1, b0, b1 = pw["wood0"], pw["wood1"], pw["back0"], pw["back1"]
-    gold = [p["pbg0"], p["pbg1"], p["pbg2"]] if night else [tone(c, p) for c in WORKS["bg"]]
+    gold = [p["pbg0"], p["pbg1"], p["pbg2"]] if dark else [tone(c, p) for c in WORKS["bg"]]
     glow = tone(WORKS["glow"], p)
     # the picture's light on the card around it and on the bookcase's near side: at night only a trace of it
-    glow_o, haze = (' opacity=".25"', "") if night else ("", f'<rect x="-10" width="120" height="{chh}" fill="url(#haze)"/>')
+    glow_o, haze = (' opacity=".25"', "") if dark else ("", f'<rect x="-10" width="120" height="{chh}" fill="url(#haze)"/>')
     # the tree's light: shafts of sun from the upper left, across the picture and the card behind the bookcase
     sun_defs, sun = light_rays("sunW", 80, W - 80, H, dark, seed=5, count=5)
     fog, wrap = "", ("", "")
     if SEASON == "summer":
-        # no tree to shade her: the sun itself, in the lens - the hero's big breathing halos, clear of her face, brighter to show
-        # against the sky, and in the dark theme's glow on both pages (this card is painted in its picture's blue, whatever the page)
+        # no tree to shade her: the sun itself, in the lens - the hero's big breathing halos, clear of her face, in the dark
+        # theme's glow on both pages, and brighter on the light one, to show against the sky the card is painted in
         sun_defs, sun = halo("sunW", [(150, 150, 190, True), (cx - 70, 330, 150, True), (110, 520, 110, False),
-                                      (cx - 150, 640, 90, False), (470, 60, 70, False)], True, strength=1.6)
+                                      (cx - 150, 640, 90, False), (470, 60, 70, False)], True, strength=1 if dark else 1.6)
     if SEASON == "spring":
-        # she stands under the leaves themselves: their light, in the dark theme's glow on both pages and brighter
-        # (this card is painted in its picture's green, whatever the page)
-        sun_defs, sun = leaf_light("leafW", W, H, True, seed=5, strength=2)
+        # she stands under the leaves themselves: their light, in the dark theme's glow on both pages, and brighter on
+        # the light one, to show against the green the card is painted in
+        sun_defs, sun = leaf_light("leafW", W, H, True, seed=5, strength=1 if dark else 2)
     if SEASON == "winter":       # no low sun in winter: now and then the whole card mists over like a cold pane
         sun_defs, fog = mist("mistW", "wall", W, H, dark, seed=6, delay=-15)
         sun, wrap = "", ('<g id="wall">', "</g>")

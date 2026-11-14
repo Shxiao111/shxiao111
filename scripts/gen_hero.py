@@ -62,7 +62,7 @@ AUTUMN = {
    border="#e8d98a", borderO=".20", grainO=".045", cursor="#e4cf5a", imgBottom=".35",
    imgTint="0.97 0 0 0 0  0 0.93 0 0 0  0 0 0.84 0 0  0 0 0 1 0",
    footText="#fbf3d4", footMono="#b3a670",
-   footGlow="#c2410c", footGlowO=".20", footToneR="0 .55 .92", footToneG="0 .45 .76", footToneB="0 .32 .55",
+   footGlow="#c2410c", footGlowO=".20", footToneR="0 .525 .96", footToneG="0 .475 .88", footToneB="0 .41 .775",
    chap2="#a0a741", mottle="#000", edge=RIM),
  "light": dict(
    bg0="#fffdf3", bg1="#faf4d9", bg2="#f0f2df",
@@ -92,7 +92,7 @@ WINTER = {
    border="#b9b4f0", borderO=".22", grainO=".045", cursor="#b9a8ff", imgBottom=".35",
    imgTint="0.95 0 0 0 0  0 0.93 0 0 0  0 0 0.97 0 0  0 0 0 1 0",
    footText="#eef1ff", footMono="#8f9bc4",
-   footGlow="#5b7fd0", footGlowO=".20", footToneR="0 1", footToneG="0 1", footToneB="0 1", footSpill=100,
+   footGlow="#5b7fd0", footGlowO=".20", footToneR="0 .46 .86", footToneG="0 .48 .89", footToneB="0 .54 .96",
    chap2="#7fb6e8", mottle="#000", edge=RIM,
    # the tree's own blue is lost on a night page, so there it is frosted: one pale colour, as dense as it was dark
    frost="0 0 0 0 .78  0 0 0 0 .84  0 0 0 0 1  -.36 -1.22 -.12 0 1.64", treeO=".8"),
@@ -126,7 +126,7 @@ SPRING = {
    border="#cfe69a", borderO=".20", grainO=".045", cursor="#b4dc5a", imgBottom=".35",
    imgTint="0.93 0 0 0 0  0 0.95 0 0 0  0 0 0.88 0 0  0 0 0 1 0",
    footText="#f1f9dc", footMono="#9fb07a",
-   footGlow="#5f9a2a", footGlowO=".20", footToneR="0 1", footToneG="0 1", footToneB="0 1", footSpill=180,
+   footGlow="#5f9a2a", footGlowO=".20", footToneR="0 .47 .89", footToneG="0 .51 .93", footToneB="0 .44 .84",
    chap2="#f29bb5", mottle="#000", edge=RIM),
  "light": dict(
    bg0="#fcfff5", bg1="#f3f9dc", bg2="#eaf5ea",
@@ -156,7 +156,7 @@ SUMMER = {
    border="#a9d6f5", borderO=".20", grainO=".045", cursor="#7cc8f5", imgBottom=".35",
    imgTint="0.92 0 0 0 0  0 0.94 0 0 0  0 0 0.97 0 0  0 0 0 1 0",
    footText="#eaf6ff", footMono="#8fb0c8",
-   footGlow="#2a8fd6", footGlowO=".20", footToneR="0 1", footToneG="0 1", footToneB="0 1", footSpill=240,
+   footGlow="#2a8fd6", footGlowO=".20", footToneR="0 .44 .85", footToneG="0 .49 .91", footToneB="0 .54 .96",
    chap2="#f2859b", mottle="#000", edge=RIM),
  "light": dict(
    bg0="#fafdff", bg1="#e8f5fd", bg2="#e6f7f3",
@@ -172,20 +172,25 @@ SUMMER = {
    footGlow="#cfeafc", footGlowO=".45", footToneR="0 1", footToneG="0 1", footToneB="0 1",
    chap2="#d9506c", mottle="#5a8ab0", edge="#a9c4d8"),
 }
-# only autumn's footer picture is toned down for the dark theme (footToneR/G/B): the other seasons' keep their daylight
+# every season's footer picture is toned down for the dark theme (footToneR/G/B), toward its own night's colour
 PAL = {"autumn": AUTUMN, "winter": WINTER, "spring": SPRING, "summer": SUMMER}[SEASON]
 # where the footer's picture sits: its width (pinned to the left edge, 380 high) and how far back from its right
 # edge it starts to fade - winter's girl is right of the middle of her picture, so it stays whole until past her
-# face, and spring's and summer's are two people, the second on the right
-FOOT_W, FOOT_FADE = {"autumn": (485, 330), "winter": (520, 125), "spring": (600, 130), "summer": (540, 130)}[SEASON]
+# face, and spring's and summer's are two people, the second on the right.  And FOOT_SPILL: on the dark theme a
+# pale picture ends as a wall of light against the night page, so its paper carries on that many px past its right
+# edge, giving out slowly - the picture fades into paper, and only the paper into the dark.  It stops short of the
+# words; and winter's is shorter still, gone before the frosted tree, which is as pale as it is
+FOOT_W, FOOT_FADE, FOOT_SPILL = {"autumn": (485, 330, 240), "winter": (520, 125, 100), "spring": (600, 130, 180),
+                                 "summer": (540, 130, 240)}[SEASON]
 
 FADE_OUT = smooth_fade()
 
 W, H = 1200, 480
 IMG_W = 560                       # hero.jpg is 1008x864 -> 560x480
-# where the picture has faded out to nothing: its right edge, unless something in it would show there as a hard
-# line - autumn's bright pane stops dead at a window post, so the fade is over before the post
-HERO_FADE_END = {"autumn": 505}.get(SEASON, IMG_W)
+# where the picture starts to fade and where it has faded out to nothing: its right edge, unless something in it
+# would show there as a hard line - autumn's bright pane stops dead at a window post, and summer's white ground at
+# a panel of sky, so there the fade is over before the line (and summer's starts sooner, just past her face)
+HERO_FADE = {"autumn": (IMG_W - 270, 505), "summer": (262, 390)}.get(SEASON, (IMG_W - 270, IMG_W))
 TX = 612                          # text column starts just past the picture
 TAG_SIZE, FOOT_SIZE = 42, 38      # Caveat runs small; this matches the letter height of the old 33/30px serif
 SIG_SIZE = 30                     # the signature under the last page's line
@@ -349,7 +354,7 @@ def hero(theme):
 <linearGradient id="nameGrad" x1="0" y1="0" x2="1" y2="0">
   <stop offset="0" stop-color="{p['name0']}"/><stop offset=".6" stop-color="{p['name1']}"/><stop offset="1" stop-color="{p['name2']}"/>
 </linearGradient>
-<linearGradient id="fadeH" gradientUnits="userSpaceOnUse" x1="{IMG_W-270}" y1="0" x2="{HERO_FADE_END}" y2="0">
+<linearGradient id="fadeH" gradientUnits="userSpaceOnUse" x1="{HERO_FADE[0]}" y1="0" x2="{HERO_FADE[1]}" y2="0">
 {FADE_OUT}
 </linearGradient>
 <linearGradient id="fadeV" gradientUnits="userSpaceOnUse" x1="0" y1="330" x2="0" y2="{H}">
@@ -550,11 +555,9 @@ def footer(theme):
     mottle, edge = p["mottle"], p["edge"]
     foot_label = esc(FOOT_LINE)
     tree_defs, tree = lit_tree(p, 508, FH) if tree_b64 else ("", "")
-    # footSpill: a daylit picture ends hard against a night page, so its white paper carries on that many px past
-    # its right edge, giving out slowly - the picture fades into paper, and only the paper into the dark.  It stops
-    # short of the words; and winter's is shorter still, gone before the frosted tree, which is as pale as it is
-    spill = (f'<linearGradient id="fspill" gradientUnits="userSpaceOnUse" x1="{IW - FOOT_FADE}" y1="0" x2="{IW + p["footSpill"]}" y2="0">{FADE_OUT}</linearGradient>',
-             f'<rect width="{IW + p["footSpill"]}" height="{FH}" fill="url(#fspill)"/>') if "footSpill" in p else ("", "")
+    # the paper past the picture (FOOT_SPILL): white, put through the picture's own tone curve
+    spill = (f'<linearGradient id="fspill" gradientUnits="userSpaceOnUse" x1="{IW - FOOT_FADE}" y1="0" x2="{IW + FOOT_SPILL}" y2="0">{FADE_OUT}</linearGradient>',
+             f'<rect width="{IW + FOOT_SPILL}" height="{FH}" fill="url(#fspill)" filter="url(#ftone)"/>') if dark else ("", "")
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {FW} {FH}" width="{FW}" height="{FH}" role="img" aria-label="{foot_label}">
 <title>{foot_label}</title>
 <defs>
