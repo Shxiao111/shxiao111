@@ -83,7 +83,7 @@ def halo(uid, glows, dark, strength=1):
     """Defs and body for soft halos.  `glows` is a list of (cx, cy, r, ring): each glow breathes (grows ~12% and
     dims) and drifts a little on its own slow cycle; `ring` adds the faint ring a bright light throws around itself.
     `strength`: how bright, beside the hero's - more, to show against a bright ground."""
-    color, blend, core = (TINT["halo"][0], "screen", .55 * strength) if dark else (TINT["halo"][1], "normal", .85)
+    color, blend, core = (TINT["halo"][0], "screen", .55 * strength) if dark else (TINT["halo"][1], "normal", 1)
     ease = ".45 0 .55 1;.45 0 .55 1"
     defs = (f'<radialGradient id="{uid}Glow"><stop offset="0" stop-color="{color}"/>'
             f'<stop offset=".3" stop-color="{color}" stop-opacity=".62"/><stop offset=".65" stop-color="{color}" stop-opacity=".2"/>'
@@ -96,7 +96,7 @@ def halo(uid, glows, dark, strength=1):
         swell = (f'values="1;1.12;1" keyTimes="0;.5;1" calcMode="spline" keySplines="{ease}" '
                  f'dur="{breathe}s" begin="{-i * 3.1:.1f}s" repeatCount="indefinite"')
         ring_el = (f'<circle r="{r * .78:.0f}" fill="none" stroke="{color}" stroke-width="{max(6, r * .05):.0f}" '
-                   f'opacity="{.42 * strength if dark else .8:g}" filter="url(#{uid}Ring)"/>' if ring else "")
+                   f'opacity="{.42 * strength if dark else 1:g}" filter="url(#{uid}Ring)"/>' if ring else "")
         body.append(
             f'<g transform="translate({cx} {cy})"><g>'
             f'<animateTransform attributeName="transform" type="translate" values="0 0;{dx} {dy};0 0" keyTimes="0;.5;1" '

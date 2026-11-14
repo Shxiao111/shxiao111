@@ -71,7 +71,7 @@ AUTUMN = {
    name0="#3b340c", name1="#6b5d12", name2="#a8841a", nameGlow="#f2e173", glowO=".75",
    over="#7a6b12", tag="#4f4516",
    pillStroke="#c7b04a", pillFill="#c9a227", pillFillO=".10", pillText="#5e5214",
-   dust="#d9bd4a", dustO=".55", spark="#b8921c",
+   dust="#d9bd4a", dustO="1", spark="#b8921c",
    border="#8a7a1a", borderO=".18", grainO=".03", cursor="#a8841a", imgBottom=".55",
    imgTint="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0",
    footText="#3b340c", footMono="#857a45",
@@ -103,7 +103,7 @@ WINTER = {
    name0="#2a2350", name1="#4a3d8f", name2="#7a5fc8", nameGlow="#cdbdf7", glowO=".75",
    over="#5d4fa3", tag="#3a3170",
    pillStroke="#a99ad9", pillFill="#7a5fc8", pillFillO=".10", pillText="#463a85",
-   dust="#b9a6ea", dustO=".55", spark="#8b73d6",
+   dust="#b9a6ea", dustO="1", spark="#8b73d6",
    border="#6a5cb0", borderO=".18", grainO=".03", cursor="#7a5fc8", imgBottom=".55",
    imgTint="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0",
    footText="#2a2350", footMono="#7c7aa5",
@@ -135,7 +135,7 @@ SPRING = {
    name0="#1f3210", name1="#3a5c14", name2="#6a9a1c", nameGlow="#d6ec8c", glowO=".75",
    over="#4d7412", tag="#324d14",
    pillStroke="#a3c452", pillFill="#7fb52e", pillFillO=".10", pillText="#3f5f12",
-   dust="#b5d44a", dustO=".55", spark="#e0809a",
+   dust="#b5d44a", dustO="1", spark="#e0809a",
    border="#5f8a1a", borderO=".18", grainO=".03", cursor="#6a9a1c", imgBottom=".55",
    imgTint="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0",
    footText="#1f3210", footMono="#7a8a55",
@@ -152,7 +152,7 @@ SUMMER = {
    name0="#ffffff", name1="#e3f4ff", name2="#7cc8f5", nameGlow="#3a9be0", glowO=".55",
    over="#8fd0f7", tag="#e6f4fd",
    pillStroke="#5a9fd0", pillFill="#3a9be0", pillFillO=".14", pillText="#d6ecfb",
-   dust="#eaf7ff", dustO="1", spark="#fff3c4",
+   dust="#e6f7a0", dustO="1", spark="#fff3c4",
    border="#a9d6f5", borderO=".20", grainO=".045", cursor="#7cc8f5", imgBottom=".35",
    imgTint="0.92 0 0 0 0  0 0.94 0 0 0  0 0 0.97 0 0  0 0 0 1 0",
    footText="#eaf6ff", footMono="#8fb0c8",
@@ -165,7 +165,7 @@ SUMMER = {
    name0="#0f2c47", name1="#1b5a8f", name2="#2f8fd6", nameGlow="#bfe3fa", glowO=".75",
    over="#1f6fae", tag="#17405f",
    pillStroke="#7fbce8", pillFill="#2f8fd6", pillFillO=".10", pillText="#1d5587",
-   dust="#7fc4ee", dustO=".55", spark="#e3a41c",
+   dust="#7fc4ee", dustO="1", spark="#e3a41c",
    border="#2f7fbf", borderO=".18", grainO=".03", cursor="#2f8fd6", imgBottom=".55",
    imgTint="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0",
    footText="#0f2c47", footMono="#6f8aa0",
@@ -214,24 +214,34 @@ BASE_CSS = """
 GRAIN = ('<filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" '
          'baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>')
 
-def dust(p, w, h, seed=7, n=18):
-    """Motes drifting up and sideways through the window light: a few soft blurred ones, many small sharp ones."""
+BLINK = "1;0;0;1" if SEASON == "summer" else "1;.25;1"     # a mote's twinkle; a firefly goes right out
+
+def dust(p, w, h, seed=7, n=18, k=1):
+    """Motes in the light, a few soft blurred ones and many small sharp ones, each season's in its own way: autumn's
+    dust drifts up and sideways through the window light and back; winter's is fine snow, coming down; spring's is
+    pollen, carried across on the wind; summer's are fireflies, which wander as the dust does and go dark between.
+    `k`: how much bigger the sharp ones are drawn - on the light page they need it to show."""
     rnd = random.Random(seed)
     soft, sharp = [], []
     for i in range(n):
         cx = rnd.uniform(20, w - 20); cy = rnd.uniform(20, h - 20)
         dx = rnd.uniform(-22, 30); dy = -rnd.uniform(16, 52)
         dur = rnd.uniform(10, 22); beg = -rnd.uniform(0, 14)
-        anim = (f'<animateTransform attributeName="transform" type="translate" values="0 0;{dx:.0f} {dy:.0f};0 0" '
+        path = f"0 0;{dx:.0f} {dy:.0f};0 0"
+        if SEASON in ("winter", "spring"):     # one way, the whole card over, at half the pace; begun anywhere along it
+            dur, beg = dur * 2, beg * dur / 7
+            path = (f"{dx:.0f} {-cy - 20:.0f};{-dx:.0f} {h - cy + 20:.0f}" if SEASON == "winter" else
+                    f"{-cx - 20:.0f} {-dy:.0f};{w - cx + 20:.0f} {dy:.0f}")
+        anim = (f'<animateTransform attributeName="transform" type="translate" values="{path}" '
                 f'dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/>')
         if i % 3 == 0:
             r = rnd.uniform(5, 14); o = rnd.uniform(0.12, 0.40) * float(p["dustO"])
             soft.append(f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{r:.1f}" opacity="{o:.2f}">{anim}</circle>')
         else:
-            r = rnd.uniform(1.0, 2.6); o = rnd.uniform(0.35, 0.85) * float(p["dustO"])
+            r = rnd.uniform(1.0, 2.6) * k; o = rnd.uniform(0.35, 0.85) * float(p["dustO"])
             tw = rnd.uniform(2.5, 5.5)
             sharp.append(f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{r:.1f}" opacity="{o:.2f}">{anim}'
-                         f'<animate attributeName="fill-opacity" values="1;.25;1" dur="{tw:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/></circle>')
+                         f'<animate attributeName="fill-opacity" values="{BLINK}" dur="{tw:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/></circle>')
     return (f'<g class="mo"><g filter="url(#blur9)" fill="{p["dust"]}">' + "".join(soft) + "</g>"
             f'<g fill="{p["dust"]}">' + "".join(sharp) + "</g></g>")
 
@@ -380,7 +390,7 @@ def hero(theme):
 </g>
 <image href="data:image/jpeg;base64,{hero_b64}" x="0" y="0" width="{IMG_W}" height="{H}" preserveAspectRatio="xMidYMid slice" mask="url(#mImg)" filter="url(#tint)"/>
 {sun}
-{dust(p, W, H)}
+{dust(p, W, H, k=1 if theme == "dark" else 2)}
 {sparkles(p)}
 <rect width="{W}" height="{H}" filter="url(#grain)" opacity="{p['grainO']}"/>
 <text x="{TX}" y="118" class="over" fill="{p['over']}" clip-path="url(#typeGreet)">{GREETING}</text>
@@ -431,12 +441,22 @@ def chapter(theme, title):
 
 SWING = f"{EASE};{EASE}"          # keySplines for a there-and-back animation (values a;b;a)
 
+# how each season's things come down: (far, mid, near) how many; fall, sway, tilt: times autumn's fall time, side to
+# side swing and rocking; flip: how thin it gets as it turns over (1: never edge-on); wind: px blown sideways on the
+# way down; gust: how many more are carried clean across the page when the wind gets up.  Autumn's maple spirals;
+# snow is many, slow and straight, and never turns edge-on; spring's petals are light, quick, tumbling, and blown
+# across the page.  Nothing falls in summer: see fireflies
+MOTION = {"autumn": dict(n=(3, 7, 2), fall=1, sway=1, tilt=1, flip=".25", wind=0),
+          "winter": dict(n=(10, 9, 3), fall=1.5, sway=.45, tilt=.3, flip="1", wind=0),
+          "spring": dict(n=(4, 8, 2), fall=.7, sway=1.3, tilt=1.6, flip=".1", wind=260, gust=9)}.get(SEASON)
+
 def leaves(w, h, seed=21):
-    """Maple leaves (in winter snow crystals, in spring and summer petals) drifting down: each one falls, sways side to side, rocks with the
-    sway and flips over.
+    """Maple leaves (in winter snow crystals, in spring and summer petals) drifting down, each season in its own way
+    (MOTION): each one falls, sways side to side, rocks with the sway and flips over.
     Three depths - small faint far leaves, mid leaves, and a few big soft-focus ones up close."""
     rnd = random.Random(seed)
-    layers = ["far"] * 3 + ["mid"] * 7 + ["near"] * 2
+    m = MOTION
+    layers = ["far"] * m["n"][0] + ["mid"] * m["n"][1] + ["near"] * m["n"][2]
     rnd.shuffle(layers)
     out = []
     for i, layer in enumerate(layers):
@@ -448,20 +468,57 @@ def leaves(w, h, seed=21):
         else:
             s, o, fall = rnd.uniform(2.7, 3.3), rnd.uniform(.75, .9), rnd.uniform(11, 15)
         blur = ' filter="url(#leafBlur)"' if layer == "near" else ""
-        sway = rnd.uniform(18, 46) * s ** .5
+        fall *= m["fall"]
+        sway = rnd.uniform(18, 46) * s ** .5 * m["sway"]
         sdur = rnd.uniform(4.5, 7.5); flip = rnd.uniform(2.6, 4.8)
-        tilt = rnd.uniform(25, 50); spin = rnd.uniform(0, 360)
+        tilt = rnd.uniform(25, 50) * m["tilt"]; spin = rnd.uniform(0, 360)
         fbeg = -rnd.uniform(0, fall); sbeg = -rnd.uniform(0, sdur)
         c = rnd.choice(LEAF_COLORS)
+        turn = "" if m["flip"] == "1" else (
+            f'<animateTransform attributeName="transform" type="scale" values="1 1;{m["flip"]} 1;1 1" keyTimes="0;.5;1" calcMode="spline" keySplines="{SWING}" dur="{flip:.1f}s" begin="{fbeg:.1f}s" repeatCount="indefinite"/>')
         swing = f'keyTimes="0;.5;1" calcMode="spline" keySplines="{SWING}" dur="{sdur:.1f}s" begin="{sbeg:.1f}s" repeatCount="indefinite"'
         out.append(
             f'<g transform="translate({x:.0f} 0)" opacity="{o:.2f}"{blur}>'
-            f'<g><animateTransform attributeName="transform" type="translate" values="0 {-14*s:.0f};0 {h+14*s:.0f}" dur="{fall:.1f}s" begin="{fbeg:.1f}s" repeatCount="indefinite"/>'
+            f'<g><animateTransform attributeName="transform" type="translate" values="{-m["wind"] // 2} {-14*s:.0f};{m["wind"] // 2} {h+14*s:.0f}" dur="{fall:.1f}s" begin="{fbeg:.1f}s" repeatCount="indefinite"/>'
             f'<g><animateTransform attributeName="transform" type="translate" values="{-sway:.0f} 0;{sway:.0f} 0;{-sway:.0f} 0" {swing}/>'
             f'<g><animateTransform attributeName="transform" type="rotate" values="{spin-tilt:.0f};{spin+tilt:.0f};{spin-tilt:.0f}" {swing}/>'
-            f'<g transform="scale({s:.2f})"><use href="#leaf" fill="{c}">'
-            f'<animateTransform attributeName="transform" type="scale" values="1 1;.25 1;1 1" keyTimes="0;.5;1" calcMode="spline" keySplines="{SWING}" dur="{flip:.1f}s" begin="{fbeg:.1f}s" repeatCount="indefinite"/>'
-            f'</use></g></g></g></g></g>')
+            f'<g transform="scale({s:.2f})"><use href="#leaf" fill="{c}">{turn}</use></g></g></g></g></g>')
+    # spring's rare moment: every half minute (first some 6s in) a gust takes a handful of petals across in 3s
+    for _ in range(m.get("gust", 0)):
+        y0, s, c = rnd.uniform(-.1, .8) * h, rnd.uniform(1.2, 2.4), rnd.choice(LEAF_COLORS)
+        y1 = y0 + rnd.uniform(.1, .35) * h
+        out.append(
+            f'<g transform="translate(-40 0)"><animateTransform attributeName="transform" type="translate" values="-40 {y0:.0f};-40 {y0:.0f};{w + 40} {y1:.0f};{w + 40} {y1:.0f}" '
+            f'keyTimes="0;.88;.98;1" dur="30s" begin="{rnd.uniform(0, 1.5) - 20:.1f}s" repeatCount="indefinite"/>'
+            f'<g transform="scale({s:.2f})"><use href="#leaf" fill="{c}"><animateTransform attributeName="transform" type="rotate" from="0" to="360" '
+            f'dur="{rnd.uniform(.9, 1.8):.1f}s" repeatCount="indefinite"/></use></g></g>')
+    return '<g class="mo">' + "\n".join(out) + "</g>"
+
+def fireflies(w, h, dark, seed=21, n=16):
+    """Summer's last page has nothing falling, only fireflies: each wanders its own slow loop, glowing and going
+    dark.  The season's rare moment: every 40s (first some 8s in) they all light one after another, in a wave from
+    left to right."""
+    rnd = random.Random(seed)
+    # the glow and its heart: pale green round a white core at night; by day a deeper green, darker at the heart,
+    # or on white paper it would vanish
+    color, core = ("#e6f7a0", "#fff") if dark else ("#8fd13a", "#4f9e12")
+
+    def wander(to, dur):
+        return (f'<animateTransform attributeName="transform" type="translate" values="0 0;{to};0 0" keyTimes="0;.5;1" calcMode="spline" '
+                f'keySplines="{SWING}" dur="{dur:.1f}s" begin="{-rnd.uniform(0, dur):.1f}s" repeatCount="indefinite"/>')
+
+    out = [f'<radialGradient id="fly"><stop offset="0" stop-color="{color}"/><stop offset=".3" stop-color="{color}" stop-opacity=".45"/>'
+           f'<stop offset="1" stop-color="{color}" stop-opacity="0"/></radialGradient>']
+    for i in range(n):
+        x, y, r = (i + rnd.uniform(.2, .8)) / n * w, rnd.uniform(.12, .9) * h, rnd.uniform(2, 3.4)
+        dx, dy, loop = rnd.uniform(-70, 70), rnd.uniform(-45, 45), rnd.uniform(14, 24)
+        body = f'<circle r="{r * 4.5:.1f}" fill="url(#fly)"/><circle r="{r * .55:.1f}" fill="{core}"/>'
+        out.append(
+            f'<g transform="translate({x:.0f} {y:.0f})"><g>{wander(f"{dx:.0f} 0", loop)}<g>{wander(f"0 {dy:.0f}", loop * .7)}'
+            f'<g opacity="0">{body}<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.25;.5;.75;1" dur="{rnd.uniform(2.4, 4.6):.1f}s" '
+            f'begin="{-rnd.uniform(0, 5):.1f}s" repeatCount="indefinite"/></g>'
+            f'<g opacity="0">{body}<animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;.9;.93;.97;1" dur="40s" '
+            f'begin="{x / w * 2 - 28:.1f}s" repeatCount="indefinite"/></g></g></g></g>')
     return '<g class="mo">' + "\n".join(out) + "</g>"
 
 # the rip down the last page's right edge, traced from a sketch: (how far in from the rightmost point, px of the
@@ -600,7 +657,7 @@ def footer(theme):
 <rect width="{FW}" height="{FH}" fill="{mottle}" opacity="{mottleO}" filter="url(#mottle)"/>
 <rect width="{FW}" height="{FH}" opacity="{toothO}" filter="url(#tooth)"/>
 <image href="data:image/jpeg;base64,{foot_b64}" x="0" y="0" width="{IW}" height="{FH}" preserveAspectRatio="xMidYMid slice" mask="url(#fmask)" filter="url(#ftone)"/>{tree}
-{leaves(FW, FH)}
+{fireflies(FW, FH, dark) if SEASON == "summer" else leaves(FW, FH)}
 <rect width="{FW}" height="{FH}" filter="url(#grain)" opacity="{p['grainO']}"/>
 <text x="{TR}" y="196" text-anchor="end" class="foot-en" fill="{p['footText']}">{FOOT_LINE}</text>
 <line x1="{TR-180}" y1="248" x2="{TR}" y2="248" stroke="{p['border']}" stroke-opacity=".5"/>
