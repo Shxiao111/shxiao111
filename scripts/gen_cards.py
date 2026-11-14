@@ -266,7 +266,8 @@ AUTUMN = {
         nextPage="#221e13", flap0="#0e0d08", flap1="#5c5238", flap2="#39321f", flap3="#282316", curlShadeO=".5", blossom="#f2a2b5",
         # works-in-progress bookcase: the bunkobon jackets and the case's back panel
         glintO=".16",
-        # the bookcase card is all picture and gold, with no dark panel beside it: at dusk it takes a deeper curve
+        # the bookcase card's picture is most of the card, where the stats panel's is under half of it: at dusk it
+        # takes a deeper curve, and the card a night page (see works_card)
         worksTone=dict(toneR="0 .36 .86", toneG="0 .26 .64", toneB="0 .16 .42"),
         paper="#efe6cf", ink="#2b2418", inkMuted="#6d604a", coverDim=".1", back0="#2b1e13", back1="#1a120b",
         # the bookworm and its five shades of page: the colours cards.yml asks snk for, which snake_card swaps for
@@ -412,6 +413,12 @@ PAL = {"autumn": AUTUMN, "winter": WINTER, "spring": SPRING, "summer": SUMMER}[S
 STATS_FADE = {"autumn": 230, "winter": 120, "spring": 150, "summer": 150}[SEASON]
 
 
+# github shows these 1200px cards about 850px wide: print smaller than this lands under 11px on screen.  A spine is
+# too narrow for it, so a title there is set as large as the spine takes (SPINE)
+SMALL = 15
+SPINE = (12, 14)           # a spine title's smallest and largest size
+SPINE_TRACK = .055         # its letter-spacing, in ems
+
 CSS = (fontface("outfit") + fontface("jbmono") +
        ".t{font-family:'Outfit',sans-serif;font-weight:800}"
        ".m{font-family:'JetBrains Mono',monospace;font-weight:500}"
@@ -451,11 +458,11 @@ def text_width(key, text, size, spacing=0.0):
     return w
 
 
-def clip_text(key, text, size, max_w):
+def clip_text(key, text, size, max_w, spacing=0.0):
     """`text`, cut short with an ellipsis if it is wider than max_w."""
-    if text_width(key, text, size) <= max_w:
+    if text_width(key, text, size, spacing) <= max_w:
         return text
-    while text and text_width(key, text + "...", size) > max_w:
+    while text and text_width(key, text + "...", size, spacing) > max_w:
         text = text[:-1]
     return text.rstrip(" ,.;:-，。、") + "..."
 
@@ -564,27 +571,27 @@ def stats_panel(theme, d):
     ]
     body = []
     for i, (val, label, sub, hot) in enumerate(big):
-        x = 56 + i * 200
+        x = 56 + i * 210
         fill = "url(#pgrad)" if hot else p["value"]
         if hot:   # a glow behind the number: lighter than the page on either theme, or it reads as a shadow
             glow = p["accent"] if theme == "dark" else p["blobA"]
             body.append(f'<text x="{x}" y="172" class="t" font-size="56" letter-spacing="-1" fill="{glow}" opacity=".5" filter="url(#pglow)">{val}</text>')
         body.append(f'<text x="{x}" y="172" class="t" font-size="56" letter-spacing="-1" fill="{fill}">{val}</text>')
-        body.append(f'<text x="{x}" y="202" class="m" font-size="12.5" fill="{p["label"]}">{label}</text>')
-        body.append(f'<text x="{x}" y="222" class="m" font-size="11" fill="{p["muted"]}">{sub}</text>')
+        body.append(f'<text x="{x}" y="204" class="m" font-size="{SMALL + 1}" fill="{p["label"]}">{label}</text>')
+        body.append(f'<text x="{x}" y="226" class="m" font-size="{SMALL}" fill="{p["muted"]}">{sub}</text>')
     # pline is laid out in user space: a gradient sized to a horizontal line's zero-height box isn't painted
     body.append('<line x1="56" y1="262" x2="636" y2="262" stroke="url(#pline)" stroke-width="1.2"/>')
     rows = [("star", "stars", d["stars"]), ("commit", "commits · 1y", d["commits"]),
             ("pr", "pull requests", d["prs"]), ("issue", "issues", d["issues"]), ("repo", "repos", d["repos"])]
     rows = [r for r in rows if r[2]]   # a bare 0 says nothing: the others close up over it
     for i, (ic, label, val) in enumerate(rows):
-        x = 56 + i * 118
+        x = 56 + i * 136
         body.append(f'<g transform="translate({x+7} 300)" fill="{p["accent"]}" stroke="{p["accent"]}" stroke-linecap="round" stroke-linejoin="round">{ICON[ic]}</g>')
         body.append(f'<text x="{x}" y="346" class="t" font-size="28" fill="{p["value"]}">{fmt(val)}</text>')
-        body.append(f'<text x="{x}" y="368" class="m" font-size="11.5" fill="{p["label"]}">{label}</text>')
+        body.append(f'<text x="{x}" y="370" class="m" font-size="{SMALL}" fill="{p["label"]}">{label}</text>')
     frac = d["active_days"] / max(d["days_count"], 1)
-    body.append(f'<text x="56" y="408" class="m" font-size="12" fill="{p["label"]}">{d["active_days"]} active days</text>'
-                f'<text x="636" y="408" class="m" font-size="11" text-anchor="end" fill="{p["muted"]}">last 12 months</text>'
+    body.append(f'<text x="56" y="408" class="m" font-size="{SMALL + 1}" fill="{p["label"]}">{d["active_days"]} active days</text>'
+                f'<text x="636" y="408" class="m" font-size="{SMALL}" text-anchor="end" fill="{p["muted"]}">last 12 months</text>'
                 f'<rect x="56" y="420" width="580" height="8" rx="4" fill="{p["track"]}"/>'
                 f'<rect class="b" style="transform-box:fill-box" x="56" y="420" width="{580*frac:.1f}" height="8" rx="4" fill="url(#pbar)"/>')
     sparks = "".join(
@@ -637,7 +644,7 @@ def stats_panel(theme, d):
 {sun}
 <g class="mo">{sparks}</g>
 <rect width="{W}" height="{H}" filter="url(#pgrain)" opacity="{p['grainO']}"/>
-<text x="56" y="84" class="m" font-size="13" letter-spacing="2.5" fill="{p['accent']}">github stats</text>
+<text x="56" y="84" class="m" font-size="{SMALL + 1}" letter-spacing="2.5" fill="{p['accent']}">github stats</text>
 {"".join(body)}{wrap[1]}{fog}
 <rect x="1" y="1" width="{W-2}" height="{H-2}" rx="27" fill="none" stroke="{p['frame']}" stroke-opacity="{p['frameO']}" stroke-width="1.5"/>
 </g>
@@ -816,7 +823,7 @@ def shelf_card(theme, d):
         j = sets[r["lang"]] = sets.get(r["lang"], -1) + 1
         cloth = mix(cloth_map[r["lang"] or "other"], "#fff" if j % 2 else "#000", (0, .2, .16, .34)[j % 4])
         bw, bh = rnd.uniform(24, 31), rnd.uniform(146, 172)
-        room = text_width("outfit", name, 8.5, .5) + 84   # the height a spine needs to carry this title whole
+        room = text_width("outfit", name, SPINE[0], SPINE[0] * SPINE_TRACK) + 72   # the height a spine needs to carry this title whole
         for k in range(n):   # a set, but no two volumes quite alike: worn, faded, a little taller or thinner
             vols.append({"si": si, "name": name, "first": k == 0, "idx": k, "w": bw * rnd.uniform(.84, 1.16),
                          "h": min(184, max(bh + rnd.uniform(-10, 10), room * (k == 0))), "cloth": cloth,
@@ -835,12 +842,12 @@ def shelf_card(theme, d):
         title = ""
         # a long name is set smaller to fit between the head and foot trim, down to a size that still reads, and
         # past that it is cut short
-        name = clip_text("outfit", v["name"], 8.5, h - 84)
-        size = max(8.5, min(11, 11 * (h - 70) / text_width("outfit", name, 11, .6)))
+        name = clip_text("outfit", v["name"], SPINE[0], h - 70, SPINE[0] * SPINE_TRACK)
+        size = max(SPINE[0], min(SPINE[1], SPINE[1] * (h - 70) / text_width("outfit", name, SPINE[1], SPINE[1] * SPINE_TRACK)))
         if v["first"] and w >= 18:
             # spine titles read top to bottom; rotated, the glyphs sit to the right of the baseline
             title = (f'<text transform="translate({x + w / 2 - size * .36:.1f} {y + 32:.1f}) rotate(90)" class="t" font-size="{size:.1f}" '
-                     f'letter-spacing="{size * .055:.2f}" fill="{foil}">{esc(name)}</text>')
+                     f'letter-spacing="{size * SPINE_TRACK:.2f}" fill="{foil}">{esc(name)}</text>')
         body = (f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="2" fill="{v["c"]}"/>'
                 + spine_trim(v["si"] % 3, x, y, w, foil, not title, vol_idx=v["idx"]) + title
                 + f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="2" fill="url(#spine)"/>')
@@ -909,29 +916,29 @@ def shelf_card(theme, d):
     # then the longest are cut short to an even share of the line
     pcts = [f"{share * 100:.1f}%" for _, share, _ in langs]
     names = [name for name, _, _ in langs]
-    fixed = sum(15 + 7 + text_width("jbmono", pct, 12) for pct in pcts)
+    fixed = sum(15 + 7 + text_width("jbmono", pct, SMALL) for pct in pcts)
     room = W - 48 - X0
     gap = 30
-    if langs and fixed + sum(text_width("jbmono", n, 12) for n in names) + gap * (len(langs) - 1) > room:
+    if langs and fixed + sum(text_width("jbmono", n, SMALL) for n in names) + gap * (len(langs) - 1) > room:
         gap = 16
         budget = room - fixed - gap * (len(langs) - 1)
-        widths = sorted(text_width("jbmono", n, 12) for n in names)
+        widths = sorted(text_width("jbmono", n, SMALL) for n in names)
         cap = budget / len(names)
         for k, w in enumerate(widths):   # names narrower than an even share leave their slack to the rest
             if w > cap:
                 break
             budget -= w
             cap = budget / max(len(names) - k - 1, 1)
-        names = [clip_text("jbmono", n, 12, cap) for n in names]
+        names = [clip_text("jbmono", n, SMALL, cap) for n in names]
     legend, lx = [], X0
     for si, (name, pct) in enumerate(zip(names, pcts)):
         legend.append(f'<rect x="{lx}" y="{SHELF_Y + 45}" width="8" height="13" rx="1.5" fill="{cloth_map[langs[si][0]]}"/>'
                       f'<rect x="{lx + 1}" y="{SHELF_Y + 48}" width="6" height="1.2" fill="{p["foil"]}" opacity=".8"/>'
-                      f'<text x="{lx + 15}" y="{SHELF_Y + 56}" class="m" font-size="12"><tspan fill="{p["label"]}">{esc(name)}</tspan>'
+                      f'<text x="{lx + 15}" y="{SHELF_Y + 56}" class="m" font-size="{SMALL}"><tspan fill="{p["label"]}">{esc(name)}</tspan>'
                       f'<tspan fill="{p["muted"]}" dx="7">{pct}</tspan></text>')
-        lx += 15 + text_width("jbmono", name, 12) + 7 + text_width("jbmono", pct, 12) + gap
+        lx += 15 + text_width("jbmono", name, SMALL) + 7 + text_width("jbmono", pct, SMALL) + gap
     if not vols:
-        books = [f'<text x="{W / 2}" y="{SHELF_Y - 60}" text-anchor="middle" class="m" font-size="13" fill="{p["muted"]}">no books on the shelf yet</text>']
+        books = [f'<text x="{W / 2}" y="{SHELF_Y - 60}" text-anchor="middle" class="m" font-size="{SMALL}" fill="{p["muted"]}">no books on the shelf yet</text>']
     # the same window as the stats card above: the same shafts, drawn on down across this card, so the light reads
     # as one band running over the seam; `clip` keeps a shaft off the card's rounded corners
     sun_defs, sun = light_rays("sunShelf", 30, W - 60, H, dark, from_left=False, seed=9, count=4,
@@ -955,7 +962,7 @@ def shelf_card(theme, d):
     )
     css = "@keyframes late{from{opacity:0}to{opacity:1}}.late{animation:late .8s ease both}"
     n = len(d["shelf"])
-    note = f"{n} repositor{'y' if n == 1 else 'ies'} · {fmt(sum(r['commits'] for r in d['shelf']))} commits · last 12 months"
+    note = f"{n} repositor{'y' if n == 1 else 'ies'} · last 12 months"   # the commits are counted once, on the stats panel
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="the repositories {esc(LOGIN)} wrote in this year, as a bookshelf">'
             + card_frame(p, W, H, "S")
             + f'<defs><style><![CDATA[{css}]]></style>{leaf_def("vleaf")}'
@@ -975,7 +982,7 @@ def shelf_card(theme, d):
            + ambient
            + f'<g transform="translate(58 34)" fill="{p["accent"]}">{ICON["star"]}</g>'
            + f'<text x="76" y="40" class="t" font-size="19" fill="url(#tgS)">bookshelf</text>'
-           + f'<text x="{W - 48}" y="40" class="m" font-size="12" text-anchor="end" fill="{p["label"]}">{note}</text>'
+           + f'<text x="{W - 48}" y="40" class="m" font-size="{SMALL}" text-anchor="end" fill="{p["label"]}">{note}</text>'
            + f'<g class="late" style="animation-delay:{landed:.2f}s"><g fill="{p["bookShade"]}" opacity="{p["bookShadeO"]}" filter="url(#bshade)">{"".join(shadows)}</g></g>'
            + contact_shadow
            + "".join(books) + sun + flowers + bookend + plank + falling + "".join(legend) + "</svg>")
@@ -1048,11 +1055,11 @@ def toc_entry(p, x0, x1, y, num, name, value, sub, t):
     """One contents line: numeral, title, dot leaders running out to the value, and a note underneath.
     Fades in at t; the leaders' base length is the finished line, the set at 0s shortens it until they run out."""
     nx = x0 + 36
-    vw = text_width("jbmono", value, 13)
+    vw = text_width("jbmono", value, SMALL)
     name = clip_text("outfit", name, 21, x1 - vw - 40 - nx)
     nw = text_width("outfit", name, 21)
     lx0, lx1 = nx + nw + 10, x1 - vw - 10
-    sub = clip_text("jbmono", sub, 11.5, x1 - nx)
+    sub = clip_text("jbmono", sub, SMALL, x1 - nx)
     leader = ""
     if lx1 > lx0 + 8:
         leader = (f'<line x1="{lx0:.1f}" y1="{y - 5}" x2="{lx1:.1f}" y2="{y - 5}" stroke="{p["muted"]}" stroke-width="1.8" '
@@ -1061,16 +1068,23 @@ def toc_entry(p, x0, x1, y, num, name, value, sub, t):
     return (f'<g class="e" style="animation-delay:{t:.2f}s">'
             f'<text x="{x0 + 24}" y="{y}" text-anchor="end" class="h" font-size="28" fill="{p["accent"]}">{ROMAN[num]}.</text>'
             f'<text x="{nx}" y="{y}" class="t" font-size="21" fill="{p["value"]}">{esc(name)}</text>'
-            f'<text x="{x1}" y="{y}" class="m" font-size="13" text-anchor="end" fill="{p["label"]}">{esc(value)}</text>'
-            f'<text x="{nx}" y="{y + 21}" class="m" font-size="11.5" fill="{p["muted"]}">{esc(sub)}</text></g>' + leader, nx, nw)
+            f'<text x="{x1}" y="{y}" class="m" font-size="{SMALL}" text-anchor="end" fill="{p["label"]}">{esc(value)}</text>'
+            f'<text x="{nx}" y="{y + 23}" class="m" font-size="{SMALL}" fill="{p["muted"]}">{esc(sub)}</text></g>' + leader, nx, nw)
 
 
-# what drifts down the works card and across its covers: blossom petals, or in winter snow crystals - as (the element
-# and what it draws, the crystal for <defs>, its size beside a petal's)
+# what drifts down the works card and across its covers: blossom petals, in winter snow crystals, in autumn the
+# maple leaves of the footer and the vase - as (the element and what it draws, its drawing for <defs>, its size
+# beside a petal's, and its colours when it brings its own: taken in turn, in place of the palette's one)
 if SEASON == "winter":
-    DRIFT, DRIFT_DEF, DRIFT_K = ("use", 'href="#flake"'), flake_def("flake"), .6
+    DRIFT, DRIFT_DEF, DRIFT_K, DRIFT_COLORS = ("use", 'href="#flake"'), flake_def("flake"), .6, None
+elif SEASON == "autumn":
+    DRIFT, DRIFT_DEF, DRIFT_K, DRIFT_COLORS = ("use", 'href="#drift"'), leaf_def("drift"), .6, LEAF_COLORS
 else:
-    DRIFT, DRIFT_DEF, DRIFT_K = ("path", f'd="{BLOSSOM_PETAL}"'), "", 1
+    DRIFT, DRIFT_DEF, DRIFT_K, DRIFT_COLORS = ("path", f'd="{BLOSSOM_PETAL}"'), "", 1, None
+
+
+def drift_color(k, default):
+    return DRIFT_COLORS[k % len(DRIFT_COLORS)] if DRIFT_COLORS else default
 
 
 def preface_icon(kind, p):
@@ -1140,17 +1154,17 @@ def toc_card(theme, d):
     for r in d["own"][:4]:
         about = [r["langs"][0], r["desc"]] if r["desc"] and r["langs"] else [r["desc"] or ", ".join(r["langs"][:3])]
         chapters.append((r["name"], when(r["pushed"]), "  ·  ".join(a for a in about if a)))
-    Y0, PITCH = 168, 58
+    Y0, PITCH = 168, 62
     (lx0, lx1), (rx0, rx1) = (96, 552), (648, 1104)
     preface, preface_clips, preface_end = preface_page(p, lx0, lx1, Y0, .3)
-    contents_end = Y0 + (max(len(chapters), 1) - 1) * PITCH + 21
+    contents_end = Y0 + (max(len(chapters), 1) - 1) * PITCH + 23
     H = round(max(preface_end, contents_end) + 70)
     body = []
     for pi, (x0, x1, title, part, col) in enumerate([(lx0, lx1, "Preface", "about the author", ""),
                                                      (rx0, rx1, "Contents", "my repositories", "last pushed")]):
         body.append(f'<text x="{x0}" y="84" class="h" font-size="46" fill="url(#tgT)">{title}</text>'
-                    f'<text x="{x0}" y="118" class="m" font-size="12" letter-spacing="2" fill="{p["accent"]}">{part}</text>'
-                    f'<text x="{x1}" y="118" class="m" font-size="11" text-anchor="end" fill="{p["muted"]}">{col}</text>'
+                    f'<text x="{x0}" y="118" class="m" font-size="{SMALL}" letter-spacing="2" fill="{p["accent"]}">{part}</text>'
+                    f'<text x="{x1}" y="118" class="m" font-size="{SMALL}" text-anchor="end" fill="{p["muted"]}">{col}</text>'
                     f'<rect x="{x0}" y="131" width="{x1 - x0}" height="1.2" fill="url(#rule)"/>'
                     f'<text x="{(x0 + x1) / 2}" y="{H - 26}" text-anchor="middle" class="h" font-size="20" fill="{p["muted"]}">~ {pi + 1} ~</text>')
     body.append(preface)
@@ -1252,7 +1266,7 @@ def wrap_blurb(text, size, max_w):
 
 def wash(p, v, base, y0, y1):
     """The cover art between y0 and y1: a watercolour wash in the language's colour, laid on a diagonal from the
-    lower left to the upper right with a few splatters, and cherry petals (in winter, snow) drifting down across it.  Seeded by the
+    lower left to the upper right with a few splatters, and cherry petals (in autumn maple leaves, in winter snow) drifting down across it.  Seeded by the
     repository's name, so each volume keeps its picture from day to day."""
     cw = COVER_W
     rnd = random.Random(v["name"])
@@ -1271,7 +1285,7 @@ def wash(p, v, base, y0, y1):
         x0, dur, beg = rnd.uniform(30, cw - 60), rnd.uniform(11, 16), -rnd.uniform(0, 14)
         petals.append(f'<g class="mo"><animateTransform attributeName="transform" type="translate" values="{x0:.0f} {y0 - 30:.0f};{x0 + 40:.0f} {(y0 + y1) / 2:.0f};{x0 + 10:.0f} {y1 + 10}" '
                       f'dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/>'
-                      f'<{DRIFT[0]} {DRIFT[1]} transform="scale({1.5 * DRIFT_K:g})" fill="{p.get("drift", p["blossom"])}" opacity=".85">'
+                      f'<{DRIFT[0]} {DRIFT[1]} transform="scale({1.5 * DRIFT_K:g})" fill="{drift_color(k, p.get("drift", p["blossom"]))}" opacity=".85">'
                       f'<animateTransform attributeName="transform" type="rotate" values="0;200;360" additive="sum" dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/></{DRIFT[0]}></g>')
     return (f'<g filter="url(#wash)">{"".join(blobs)}</g><g fill="{base}" opacity=".45">{dots}</g>', "".join(petals))
 
@@ -1306,11 +1320,11 @@ def cover(p, i, v, today, shade=0, number=1, band=0):
             f'<stop offset="1" stop-color="{p["paper"]}" stop-opacity="0"/></linearGradient>')
     title = "".join(f'<text x="{cx}" y="{ty + j * lead:.1f}" text-anchor="middle" class="t" font-size="{size}" fill="{ink}">{esc(ln)}</text>'
                     for j, ln in enumerate(lines))
-    head_row = (f'<text x="15" y="26" class="m" font-size="11" fill="{p["inkMuted"]}">{esc(v["owner"][:1].lower())}-1-{number}</text>'
+    head_row = (f'<text x="15" y="26" class="m" font-size="14" fill="{p["inkMuted"]}">{esc(v["owner"][:1].lower())}-1-{number}</text>'
                 f'<text x="{cw - 16}" y="27" text-anchor="end" class="h" font-size="19" fill="{p["inkMuted"]}">vol. {ROMAN[i]}</text>')
     author = (f'<rect x="{cx - 14}" y="{last + 10:.1f}" width="28" height=".8" fill="{ink}" opacity=".45"/>'
-              f'<text x="{cx}" y="{last + 27:.1f}" text-anchor="middle" class="m" font-size="12" letter-spacing="1.2" fill="{p["inkMuted"]}">'
-              f'{esc(clip_text("jbmono", v["owner"], 12, cw - 40))}</text>')
+              f'<text x="{cx}" y="{last + 27:.1f}" text-anchor="middle" class="m" font-size="14" letter-spacing="1.2" fill="{p["inkMuted"]}">'
+              f'{esc(clip_text("jbmono", v["owner"], 14, cw - 40, 1.2))}</text>')
     jacket = (f'<rect width="{cw}" height="{ch}" fill="{p["paper"]}"/>' + art
               + f'<rect width="{cw}" height="{top + 26:.1f}" fill="url(#bf{i})"/>'
               + petals
@@ -1325,7 +1339,7 @@ def cover(p, i, v, today, shade=0, number=1, band=0):
                 f'<rect x="-28" y="-17" width="54" height="34" fill="#fff7cf"/>'
                 f'<rect x="-12" y="-22" width="24" height="9" fill="{p["blossom"]}" opacity=".6" transform="rotate(-5)"/>'
                 f'<text x="-1" y="0" text-anchor="middle" class="h" font-size="18" fill="#c8281e">new</text>'
-                f'<text x="-1" y="12" text-anchor="middle" class="h" font-size="12.5" fill="{ink}">chapter!</text></g>')
+                f'<text x="-1" y="13" text-anchor="middle" class="h" font-size="15" fill="{ink}">chapter!</text></g>')
     # the obi: the description as its copy in bold, the stars in a round badge on the right, the language at the foot
     badge = ""
     bw = cw - 28
@@ -1353,7 +1367,7 @@ def cover(p, i, v, today, shade=0, number=1, band=0):
            + "".join(f'<text x="14" y="{oy + 28 + j * 19}" class="m" font-size="{bs}" font-weight="700" fill="{oink}">{esc(ln)}</text>'
                      for j, ln in enumerate(copy))
            + badge +
-           f'<text x="14" y="{ch - 9}" class="m" font-size="11" fill="{oink}" opacity=".75">{esc(clip_text("jbmono", v["lang"], 11, cw - 28))}</text>')
+           f'<text x="14" y="{ch - 9}" class="m" font-size="14" fill="{oink}" opacity=".75">{esc(clip_text("jbmono", v["lang"], 14, cw - 28))}</text>')
     glint = (f'<g class="mo" transform="translate(-120 0)">'
              f'<animateTransform attributeName="transform" type="translate" values="-120 0;-120 0;300 0;300 0" keyTimes="0;.84;.93;1" '
              f'calcMode="spline" keySplines="0 0 1 1;{EASE};0 0 1 1" dur="15s" begin="{3 + i * 1.6:.1f}s" repeatCount="indefinite"/>'
@@ -1368,11 +1382,12 @@ WORKS_W = 1200             # as wide as the other cards
 WORKS_TUCK = 60            # how far the picture runs on under the bookcase, so its fade ends behind it
 # the works card is painted with its picture's own light, so the picture fades into it: `bg` is the picture's colours
 # down its right edge, top to bottom (sampled from works.jpg), then the bookcase's wood and back panel, the glow, and
-# what drifts down across the card - autumn's golden tree and its white blossom, winter's snow sky and snow, spring's
-# new leaves and cherry petals, summer's noon sky going down into cloud (nothing drifts there)
+# what drifts down across the card - autumn's golden tree (its leaves are maple.py's, in their own colours, and only
+# cast petalShade), winter's snow sky and snow, spring's new leaves and cherry petals, summer's noon sky going down
+# into cloud (nothing drifts there)
 WORKS = {
     "autumn": dict(bg=["#fba02e", "#f79c3d", "#f7bb78"], wood0="#e2ae62", wood1="#b67a38", woodLine="#7a4a1c",
-                   back0="#f9e2a8", back1="#eec07a", glow="#ffe9a6", petal="#fffaf0", petalShade="#6b4a1a"),
+                   back0="#f9e2a8", back1="#eec07a", glow="#ffe9a6", petalShade="#6b4a1a"),
     "winter": dict(bg=["#f2f4f5", "#f8f8f8", "#d5dee0"], wood0="#b9c5d6", wood1="#8595ad", woodLine="#4a5670",
                    back0="#e6ebf3", back1="#cbd5e3", glow="#ffffff", petal="#a9bdf4", petalShade="#5a6a8a"),
     "spring": dict(bg=["#d4f1b8", "#f9fef3", "#ffffff"], wood0="#e6dcae", wood1="#b3a56a", woodLine="#6a6032",
@@ -1509,16 +1524,19 @@ def bookcase(p, d, rows, light=""):
 def works_card(theme, d):
     """Chapter ii: Tooko with a book in her arms (works.jpg: under the golden tree in autumn, crouched in the snow
     in winter, under new leaves in spring, against the sky in summer), fading into a two-shelf bookcase of the pinned repositories as bunkobon - the top shelf takes the odd
-    one, and the case is two or three books wide - with white petals, or snow, drifting down across both.  The books keep their full size, so their
+    one, and the case is two or three books wide - with leaves, petals or snow drifting down across both.  The books keep their full size, so their
     print stays legible."""
     p = dict(PAL[theme], **PAL[theme].get("worksTone", {}))
     vols = d["works"]
     half = (len(vols) + 1) // 2
     rows = [vols[:half], vols[half:]]
     dark = theme == "dark"
-    # the bookcase is made of the same light as the picture (honey-coloured wood and a pale gold back in autumn,
-    # frosted blue in winter), toned with it
-    pw = dict(p, **{k: tone(WORKS[k], p) for k in ("wood0", "wood1", "woodLine", "back0", "back1")})
+    # a palette with a dusk curve (worksTone: autumn's dark theme) gets a night page like the cards around it: the
+    # picture fades into the page's own dark, and the bookcase is the bookshelf card's dark wood
+    night = "worksTone" in PAL[theme]
+    # otherwise the bookcase is made of the same light as the picture (honey-coloured wood and a pale gold back in
+    # autumn, frosted blue in winter), toned with it
+    pw = p if night else dict(p, **{k: tone(WORKS[k], p) for k in ("wood0", "wood1", "woodLine", "back0", "back1")})
     rnd = random.Random(21)
     # clean and serene interior without muddy dappled shade
     light = ""
@@ -1528,7 +1546,7 @@ def works_card(theme, d):
     cx, cy = W - M - cw, M
     IW = cx + WORKS_TUCK         # works.jpg (930x1092), pinned to the top left and cut to fill up to the bookcase
     petals = []
-    # white blossom drifting from the tree (or snow), down and to the right, across the bookcase; none in summer
+    # leaves drifting from the tree (or blossom, or snow), down and to the right, across the bookcase; none in summer
     for k in range(0 if SEASON == "summer" else 7):
         x0, dur = rnd.uniform(-40, W * .55), rnd.uniform(14, 22)
         beg, s, spin = -rnd.uniform(0, dur), rnd.uniform(1.6, 2.6), rnd.uniform(0, 360)
@@ -1537,7 +1555,7 @@ def works_card(theme, d):
                       f'<{DRIFT[0]} {DRIFT[1]} transform="translate(1 2) scale({s * DRIFT_K:.2f})" fill="{WORKS["petalShade"]}" opacity=".25">'
                       f'<animateTransform attributeName="transform" type="rotate" values="{spin:.0f};{spin + 220:.0f};{spin + 360:.0f}" additive="sum" '
                       f'dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/></{DRIFT[0]}>'
-                      f'<{DRIFT[0]} {DRIFT[1]} transform="scale({s * DRIFT_K:.2f})" fill="{WORKS["petal"]}">'
+                      f'<{DRIFT[0]} {DRIFT[1]} transform="scale({s * DRIFT_K:.2f})" fill="{drift_color(k, WORKS.get("petal"))}">'
                       f'<animateTransform attributeName="transform" type="rotate" values="{spin:.0f};{spin + 220:.0f};{spin + 360:.0f}" additive="sum" '
                       f'dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/></{DRIFT[0]}></g>')
     css = (fontface("caveat") + ".h{font-family:'Caveat',cursive;font-weight:600}"
@@ -1547,8 +1565,10 @@ def works_card(theme, d):
     label = esc(f"works in progress: Tooko holding a book beside a bookcase of {len(vols)} pinned repositories: "
                 f"{', '.join(v['name'] for v in vols) or 'none yet'}")
     wood0, wood1, b0, b1 = pw["wood0"], pw["wood1"], pw["back0"], pw["back1"]
-    gold = [tone(c, p) for c in WORKS["bg"]]
+    gold = [p["pbg0"], p["pbg1"], p["pbg2"]] if night else [tone(c, p) for c in WORKS["bg"]]
     glow = tone(WORKS["glow"], p)
+    # the picture's light on the card around it and on the bookcase's near side: at night only a trace of it
+    glow_o, haze = (' opacity=".25"', "") if night else ("", f'<rect x="-10" width="120" height="{chh}" fill="url(#haze)"/>')
     # the tree's light: shafts of sun from the upper left, across the picture and the card behind the bookcase
     sun_defs, sun = light_rays("sunW", 80, W - 80, H, dark, seed=5, count=5)
     fog, wrap = "", ("", "")
@@ -1602,22 +1622,24 @@ def works_card(theme, d):
             + f'<g clip-path="url(#wcard)">{wrap[0]}'
             # the tree's light, all across the card: its colours, and soft patches of sun through the leaves
             f'<rect width="{W}" height="{H}" fill="url(#wbg)"/>'
-            f'<g fill="{glow}" filter="url(#wglow)"><ellipse cx="{W * .62:.0f}" cy="{H * .18:.0f}" rx="260" ry="150" opacity=".55"/>'
+            f'<g fill="{glow}" filter="url(#wglow)"{glow_o}><ellipse cx="{W * .62:.0f}" cy="{H * .18:.0f}" rx="260" ry="150" opacity=".55"/>'
             f'<ellipse cx="{W * .95:.0f}" cy="{H * .55:.0f}" rx="200" ry="260" opacity=".4"/>'
             f'<ellipse cx="{W * .7:.0f}" cy="{H * .95:.0f}" rx="320" ry="120" opacity=".45"/></g>'
             f'<image href="data:image/jpeg;base64,{WORKS_IMG}" width="{IW}" height="{H}" preserveAspectRatio="xMinYMin slice" mask="url(#wmask)" filter="url(#wtint)"/>'
             + sun +   # behind the bookcase, so the light never dims the books' print
             f'<rect x="{cx + 8}" y="{cy + 12}" width="{cw}" height="{chh}" fill="#000" opacity=".35" filter="url(#caseShade)"/>'
-            f'<g transform="translate({cx} {cy})">{case}<rect x="-10" width="120" height="{chh}" fill="url(#haze)"/></g>'
+            f'<g transform="translate({cx} {cy})">{case}{haze}</g>'
             + '<g class="mo">' + "".join(petals) + f"</g>{wrap[1]}{fog}</g>"
             f'<rect x="0.75" y="0.75" width="{W - 1.5}" height="{H - 1.5}" rx="16" fill="none" stroke="{p["border"]}" stroke-width="1.5"/></svg>')
 
 
-def snake_card(theme, raw, d):
+def snake_card(theme, raw):
     """The contributions card: snk's svg nested in a card like the others, scaled up to 16px cells on a 20px pitch.
     In a book the snake is a bookworm, eating its way through the year's pages, so that is what the card is called.
-    No total in the header: the stats panel already gives the all-time one, and a 12-month total beside it never
-    quite agrees.  Only fonts and .t/.m go in the style block; snk's own css uses .c/.s/.u."""
+    No numbers in the header: the stats panel already gives the all-time total and the active days, and a 12-month
+    total beside it never quite agrees.  Under the year, snk's bar of pages eaten starts each loop empty, so it gets
+    a track in the colour of an uneaten page, or the band reads as left blank.
+    Only fonts and .t/.m go in the style block; snk's own css uses .c/.s/.u."""
     p = PAL[theme]
     W, H = 1200, 300
     vb = re.search(r'viewBox="([^"]+)"', raw).group(1)
@@ -1638,8 +1660,11 @@ def snake_card(theme, raw, d):
            ".m{font-family:'JetBrains Mono',monospace;font-weight:500}" + CALM)
     head = (f'<g transform="translate(58 34)" fill="{p["accent"]}">{ICON["star"]}</g>'
             f'<text x="76" y="40" class="t" font-size="19" fill="url(#tgN)">the bookworm</text>'
-            f'<text x="{W-gx}" y="40" class="m" font-size="12" text-anchor="end" fill="{p["label"]}">{d["active_days"]} active days · last 12 months</text>')
-    grid = f'<svg x="{gx + vx*scale:.1f}" y="{gy + vy*scale:.1f}" width="{vw*scale:.1f}" height="{vh*scale:.1f}" viewBox="{vb}">{inner}</svg>'
+            f'<text x="{W-gx}" y="40" class="m" font-size="{SMALL}" text-anchor="end" fill="{p["label"]}">last 12 months</text>')
+    bar = re.search(r'<rect class="u [^>]*?height="([\d.]+)"[^>]*?y="([\d.]+)"', inner)   # the first piece of snk's bar
+    track = (f'<rect x="0" y="{bar.group(2)}" width="{vw + 2 * vx:g}" height="{bar.group(1)}" fill="{p["snake"][1]}"/>'
+             if bar else "")
+    grid = f'<svg x="{gx + vx*scale:.1f}" y="{gy + vy*scale:.1f}" width="{vw*scale:.1f}" height="{vh*scale:.1f}" viewBox="{vb}">{track}{inner}</svg>'
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="contribution snake of {esc(LOGIN)}">'
             f'<defs><style><![CDATA[{css}]]></style>'
             f'<linearGradient id="bgN" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{p["bg0"]}"/><stop offset="1" stop-color="{p["bg1"]}"/></linearGradient>'
@@ -1664,11 +1689,11 @@ def colophon_card(theme, d):
             f'<defs><style><![CDATA[{css}]]></style></defs>'
             f'<g transform="translate({W / 2:.0f} 16)"><path d="{star_path(6)}" fill="{p["accent"]}"/></g>'
             f'<text x="{W / 2:.0f}" y="62" text-anchor="middle" class="h" font-size="34" fill="{p["title"]}">{esc(line)}</text>'
-            f'<text x="{W / 2:.0f}" y="94" text-anchor="middle" class="m" font-size="14" letter-spacing="1" fill="{p["muted"]}">'
+            f'<text x="{W / 2:.0f}" y="94" text-anchor="middle" class="m" font-size="{SMALL + 1}" letter-spacing="1" fill="{p["muted"]}">'
             f'set in Outfit, Caveat &amp; JetBrains Mono · bound daily by GitHub Actions</text></svg>')
 
 
-def wrap_snake(d):
+def wrap_snake():
     for theme in ("dark", "light"):
         path = os.path.join(OUT, f"snake-{theme}.svg")
         if not os.path.exists(path):
@@ -1678,14 +1703,14 @@ def wrap_snake(d):
             raw = fh.read()
         if 'aria-label="contribution snake of' in raw:
             continue
-        write_svg(path, punch(snake_card(theme, raw, d), theme == "dark"))
+        write_svg(path, punch(snake_card(theme, raw), theme == "dark"))
         print(f"framed {path} ({os.path.getsize(path)//1024} KB)")
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
     d = collect()
-    wrap_snake(d)
+    wrap_snake()
     for theme in ("dark", "light"):
         for name, fn in (("stats", stats_panel), ("shelf", shelf_card), ("toc", toc_card), ("works", works_card),
                          ("colophon", colophon_card)):

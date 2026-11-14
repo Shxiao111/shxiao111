@@ -152,16 +152,17 @@ class CardTests(unittest.TestCase):
         """snk's svgs are framed as the contributions card once, a second run leaves them alone, and a missing
         one (a local run without snk) is skipped."""
         raw = ('<svg viewBox="-16 -32 880 192" width="880" height="192" xmlns="http://www.w3.org/2000/svg">'
-               '<style>:root{--c1:#5c2a16}.c{fill:red}</style><rect class="c" x="0" y="0" width="12" height="12"/></svg>')
+               '<style>:root{--c1:#5c2a16}.c{fill:red}</style><rect class="c" x="0" y="0" width="12" height="12"/>'
+               '<rect class="u u0" height="12" width="273.2" x="0.0" y="144"/></svg>')
         with tempfile.TemporaryDirectory() as out, mock.patch.object(gen_cards, "OUT", out), \
                 contextlib.redirect_stdout(io.StringIO()):
             path = os.path.join(out, "snake-dark.svg")
             with open(path, "w", encoding="utf-8") as fh:
                 fh.write(raw)
-            gen_cards.wrap_snake({"active_days": 42})
+            gen_cards.wrap_snake()
             with open(path, encoding="utf-8") as fh:
                 framed = fh.read()
-            gen_cards.wrap_snake({"active_days": 42})
+            gen_cards.wrap_snake()
             with open(path, encoding="utf-8") as fh:
                 self.assertEqual(fh.read(), framed)
             self.assertFalse(os.path.exists(os.path.join(out, "snake-light.svg")))
@@ -169,7 +170,10 @@ class CardTests(unittest.TestCase):
         self.assertIn(">the bookworm<", framed)
         # snk is asked for autumn's colours (cards.yml); the card wears the season's
         self.assertIn(f"--c1:{gen_cards.PAL['dark']['snake'][2]}", framed)
-        self.assertIn("42 active days · last 12 months", framed)
+        # the stats panel counts the active days; here only the span, and a track under snk's bar of pages eaten
+        self.assertIn(">last 12 months<", framed)
+        self.assertNotIn("active days", framed)
+        self.assertIn(f'<rect x="0" y="144" width="848" height="12" fill="{gen_cards.PAL["dark"]["snake"][1]}"/>', framed)
 
     def test_season_follows_the_calendar(self):
         self.assertEqual([season_of(m) for m in (1, 4, 7, 10, 12)], ["winter", "spring", "summer", "autumn", "winter"])
@@ -198,7 +202,7 @@ class CardTests(unittest.TestCase):
         for theme in ("dark", "light"):
             svg = gen_cards.shelf_card(theme, d)
             ET.fromstring(svg)
-            self.assertIn("40 repositories · 40 commits", svg)
+            self.assertIn("40 repositories · last 12 months", svg)
 
     def test_shelf_sets(self):
         """A set per repository: one that took most of the year's commits doesn't crowd the others off, every set is
@@ -215,7 +219,7 @@ class CardTests(unittest.TestCase):
         self.assertEqual(titles[2], "notes")
         self.assertLess(len(spines) - 3, 30)   # by commits alone the big one would take 33 of the 34 volumes
         self.assertIn(">other<", svg)
-        self.assertIn("3 repositories · 410 commits", svg)
+        self.assertIn("3 repositories · last 12 months", svg)
         self.assertIn("1 repository ·", gen_cards.shelf_card("dark", {"shelf": shelf[:1]}))
 
     def test_colophon(self):
@@ -251,8 +255,8 @@ class CardTests(unittest.TestCase):
         self.assertEqual(len(rows), 6)
         last = rows[-1]
         name, pct = (ts.text for ts in last.iter(f"{ns}tspan"))
-        right = (float(last.get("x")) + gen_cards.text_width("jbmono", name, 12)
-                 + 7 + gen_cards.text_width("jbmono", pct, 12))
+        right = (float(last.get("x")) + gen_cards.text_width("jbmono", name, gen_cards.SMALL)
+                 + 7 + gen_cards.text_width("jbmono", pct, gen_cards.SMALL))
         self.assertLessEqual(right, 1200 - 48)
         self.assertTrue(any(ts.text.endswith("...") for t in rows for ts in t.iter(f"{ns}tspan")))
 

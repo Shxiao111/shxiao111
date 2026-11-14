@@ -183,8 +183,14 @@ FADE_OUT = smooth_fade()
 
 W, H = 1200, 480
 IMG_W = 560                       # hero.jpg is 1008x864 -> 560x480
+# where the picture has faded out to nothing: its right edge, unless something in it would show there as a hard
+# line - autumn's bright pane stops dead at a window post, so the fade is over before the post
+HERO_FADE_END = {"autumn": 505}.get(SEASON, IMG_W)
 TX = 612                          # text column starts just past the picture
 TAG_SIZE, FOOT_SIZE = 42, 38      # Caveat runs small; this matches the letter height of the old 33/30px serif
+SIG_SIZE = 30                     # the signature under the last page's line
+# github shows these 1200px pages about 850px wide, so print below ~15px lands under 11px on screen
+OVER_SIZE, PILL_SIZE = 16, 15     # the greeting above the name; the pills below the tagline
 
 # hero intro, played once per page load: type the greeting, then the name, then hand-write the tagline
 TYPE_START = .5                   # s before the first keystroke
@@ -193,11 +199,12 @@ LINE_PAUSE, WRITE_PAUSE = .35, .3
 WRITE_SPEED = 230                 # px of handwriting per second
 
 BASE_CSS = """
-.over{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:14px;letter-spacing:2.5px}
+.over{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:%dpx;letter-spacing:2.5px}
 .name{font-family:'Outfit',sans-serif;font-weight:800;font-size:92px;letter-spacing:-2px}
-.pill{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px}
+.pill{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:%dpx}
 .foot-en{font-family:'Caveat',cursive;font-weight:600;font-size:%dpx}
-""" % FOOT_SIZE + CALM
+.sig{font-family:'Caveat',cursive;font-weight:600;font-size:%dpx}
+""" % (OVER_SIZE, PILL_SIZE, FOOT_SIZE, SIG_SIZE) + CALM
 
 GRAIN = ('<filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" '
          'baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>')
@@ -238,14 +245,14 @@ def pills(p, x0=TX, y0=326, appear=None):
     """`appear`: fade the pills in one after another from this time (s); they stay visible without SMIL."""
     out = []; x = x0
     for i, t in enumerate(PILLS):
-        w = width("jbmono", t, 13) + 28
+        w = width("jbmono", t, PILL_SIZE) + 28
         fade = ("" if appear is None else
                 f'<set attributeName="opacity" to="0" begin="0s" fill="freeze"/>'
                 f'<animate attributeName="opacity" from="0" to="1" begin="{appear + i * .15:.2f}s" dur=".5s" fill="freeze"/>')
         out.append(
             f'<g>{fade}<rect x="{x:.1f}" y="{y0}" width="{w:.1f}" height="28" rx="14" fill="{p["pillFill"]}" fill-opacity="{p["pillFillO"]}" '
             f'stroke="{p["pillStroke"]}" stroke-opacity=".75" stroke-width="1"/>'
-            f'<text x="{x+14:.1f}" y="{y0+18.5}" class="pill" fill="{p["pillText"]}">{t}</text></g>')
+            f'<text x="{x+14:.1f}" y="{y0+19.5}" class="pill" fill="{p["pillText"]}">{t}</text></g>')
         x += w + 10
     if x - 10 > W - 52:           # stay clear of the binder holes on the right edge
         raise SystemExit(f"pills overflow the banner by {x - 10 - (W - 52):.0f}px; shorten PILLS")
@@ -260,7 +267,7 @@ def keystrokes(text, key, size, spacing, start, seed):
         t += key * rnd.uniform(.7, 1.4)
     return out
 
-TYPE_FONTS = {14: "jbmono", 92: "outfit"}
+TYPE_FONTS = {OVER_SIZE: "jbmono", 92: "outfit"}
 
 def reveal(clip_id, x, y, h, full_w, strokes, pad_l, pad_r):
     """Clip that grows one character per keystroke.  Its base width shows the whole line, so a viewer
@@ -304,11 +311,11 @@ def hero(theme):
     css = "".join(fontface(k) for k in ("outfit", "jbmono")) + BASE_CSS   # the tagline is drawn as glyph paths
     name_w = width("outfit", NAME, 92, letter_spacing=-2)
     cursor_x = TX + name_w + 12
-    greet = keystrokes(GREETING, GREET_KEY, 14, 2.5, TYPE_START, seed=1)
+    greet = keystrokes(GREETING, GREET_KEY, OVER_SIZE, 2.5, TYPE_START, seed=1)
     name_start = greet[-1][0] + LINE_PAUSE
     typed = keystrokes(NAME, NAME_KEY, 92, -2, name_start, seed=2)
     name_end = typed[-1][0]
-    greet_w = width("jbmono", GREETING, 14, letter_spacing=2.5)
+    greet_w = width("jbmono", GREETING, OVER_SIZE, letter_spacing=2.5)
     # cursor: a thin bar on the greeting line, then the tall bar that follows the name and blinks once done;
     # its base attributes are the final resting place after the name
     cur = ('<set attributeName="x" to="{x}" begin="0s" fill="freeze"/><set attributeName="y" to="104" begin="0s" fill="freeze"/>'
@@ -342,7 +349,7 @@ def hero(theme):
 <linearGradient id="nameGrad" x1="0" y1="0" x2="1" y2="0">
   <stop offset="0" stop-color="{p['name0']}"/><stop offset=".6" stop-color="{p['name1']}"/><stop offset="1" stop-color="{p['name2']}"/>
 </linearGradient>
-<linearGradient id="fadeH" gradientUnits="userSpaceOnUse" x1="{IMG_W-270}" y1="0" x2="{IMG_W}" y2="0">
+<linearGradient id="fadeH" gradientUnits="userSpaceOnUse" x1="{IMG_W-270}" y1="0" x2="{HERO_FADE_END}" y2="0">
 {FADE_OUT}
 </linearGradient>
 <linearGradient id="fadeV" gradientUnits="userSpaceOnUse" x1="0" y1="330" x2="0" y2="{H}">
@@ -514,10 +521,21 @@ def lit_tree(p, x, foot, w=250, h=318):
     return defs, (f'<g mask="url(#treeMask)" opacity="{p["treeO"]}"><image href="data:image/jpeg;base64,{tree_b64}" x="{x}" y="{y}" '
                   f'width="{w}" height="{h}" filter="url(#frost)"/></g><g class="mo">{lights}</g>')
 
+def signature(x, y, color):
+    """FOOT_SUB signed by hand, ending at x.  The Caveat subset has no middle dot, so the one between its parts
+    is drawn, as in a chapter's title."""
+    out, gap = [], 30
+    for k, part in enumerate(reversed([s.strip() for s in FOOT_SUB.split("·")])):
+        if k:
+            out.append(f'<circle cx="{x + gap / 2:.1f}" cy="{y - 9}" r="2.2" fill="{color}"/>')
+        out.append(f'<text x="{x:.1f}" y="{y}" text-anchor="end" class="sig" fill="{color}">{esc(part)}</text>')
+        x -= width("caveat", part, SIG_SIZE) + gap
+    return "".join(out)
+
 def footer(theme):
     p = PAL[theme]
     dark = theme == "dark"
-    css = "".join(fontface(k) for k in ("caveat", "jbmono")) + BASE_CSS
+    css = fontface("caveat") + BASE_CSS
     FW, FH = 1200, 380
     IW = FOOT_W                   # footer.jpg at half its size, pinned to the left edge
     TR = FW - 100                 # the text's right edge, clear of the rip
@@ -583,7 +601,7 @@ def footer(theme):
 <rect width="{FW}" height="{FH}" filter="url(#grain)" opacity="{p['grainO']}"/>
 <text x="{TR}" y="196" text-anchor="end" class="foot-en" fill="{p['footText']}">{FOOT_LINE}</text>
 <line x1="{TR-180}" y1="248" x2="{TR}" y2="248" stroke="{p['border']}" stroke-opacity=".5"/>
-<text x="{TR}" y="278" text-anchor="end" class="over" fill="{p['footMono']}">{FOOT_SUB}</text>
+{signature(TR, 284, p['footMono'])}
 <path d="{outline}" fill="none" stroke="{edge}" stroke-opacity="{edgeO}" stroke-width="1.6"/>
 <polygon points="{core}" fill="{rim}" fill-opacity="{coreO}" filter="url(#fibre)"/>
 <polyline points="{inner}" fill="none" stroke="#000" stroke-opacity="{shadeO}" stroke-width="1" stroke-linejoin="round"/>
