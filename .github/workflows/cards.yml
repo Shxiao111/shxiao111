@@ -22,15 +22,23 @@ on:
 permissions:
   contents: write
 
-# the schedule and a push can overlap; both force-push the output branch, so let one finish first
+# the schedule and a push can overlap; both force-push the same branches, so let one finish first
 concurrency:
-  group: profile-cards-${{ github.ref_name == 'main' && 'output' || 'preview' }}
+  group: profile-cards
   cancel-in-progress: false
 
 jobs:
   cards:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # `live` wears the calendar's season and goes to the output branch the profile reads; each of the others is
+    # one season worn whatever the date, published whole to its own preview-<season> branch
+    strategy:
+      fail-fast: false   # a preview that fails must not cancel the live cards
+      matrix:
+        season: [live, autumn, winter, spring, summer]
+    env:
+      SEASON: ${{ matrix.season != 'live' && matrix.season || '' }}   # empty: common.py asks the calendar
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
@@ -54,31 +62,37 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_LOGIN: ${{ github.repository_owner }}
 
-      # off main nothing may touch the live cards: a run there (workflow_dispatch on a branch) publishes a whole
-      # preview instead - the branch's README and assets beside its cards, the card urls made relative - to the
-      # `preview` branch, where GitHub renders it as it will the profile
+      # the hero, chapter and footer pages, in this leg's season
+      - name: draw the static pages
+        run: |
+          python -m pip install -q -r scripts/requirements.txt
+          python scripts/gen_hero.py
+
+      # a whole profile in one season - the README and the pages just drawn beside the cards, the card urls made
+      # relative - for its preview-<season> branch, where GitHub renders it as it will the profile
       - name: assemble preview
-        if: github.ref_name != 'main'
+        if: matrix.season != 'live'
         run: |
           sed -E 's#https://raw\.githubusercontent\.com/[^/"]+/[^/"]+/output/##g' README.md > dist/README.md
           cp -r assets dist/assets
-          printf '\n<sub>preview of <code>%s</code> at %s</sub>\n' "$GITHUB_REF_NAME" "${GITHUB_SHA::7}" >> dist/README.md
+          printf '\n<sub>%s preview of <code>%s</code> at %s</sub>\n' "$SEASON" "$GITHUB_REF_NAME" "${GITHUB_SHA::7}" >> dist/README.md
 
-      - name: publish to the output branch, or off main to the preview branch
+      # off main nothing may touch the live cards: a run there (workflow_dispatch on a branch) only redraws the
+      # four previews, from that branch
+      - name: publish to the output branch, or a season's preview to its own
+        if: matrix.season != 'live' || github.ref_name == 'main'
         uses: crazy-max/ghaction-github-pages@df5cc2bfa78282ded844b354faee141f06b41865 # v4.2.0
         with:
-          target_branch: ${{ github.ref_name == 'main' && 'output' || 'preview' }}
+          target_branch: ${{ matrix.season == 'live' && 'output' || format('preview-{0}', matrix.season) }}
           build_dir: dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # the season follows the calendar (common.py) and the hero, chapter and footer pages are committed: when it
-      # turns, redraw them and commit, so the profile changes with the cards and check.yml's comparison stays true
-      - name: redraw the static pages when the season turns
-        if: github.ref_name == 'main'
+      # the season follows the calendar (common.py) and the static pages are committed: when it turns, commit
+      # the redrawn ones, so the profile changes with the cards and check.yml's comparison stays true
+      - name: commit the static pages when the season turns
+        if: matrix.season == 'live' && github.ref_name == 'main'
         run: |
-          python -m pip install -q -r scripts/requirements.txt
-          python scripts/gen_hero.py
           git diff --quiet -- assets/ && exit 0
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
