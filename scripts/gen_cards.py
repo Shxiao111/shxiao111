@@ -1548,17 +1548,21 @@ def works_card(theme, d):
     cx, cy = W - M - cw, M
     IW = cx + WORKS_TUCK         # works.jpg (930x1092), pinned to the top left and cut to fill up to the bookcase
     petals = []
-    # leaves drifting from the tree (or blossom, or snow), down and to the right, across the bookcase; none in summer
-    for k in range(0 if SEASON == "summer" else 7):
-        x0, dur = rnd.uniform(-40, W * .55), rnd.uniform(14, 22)
+    # leaves drifting from the tree (or blossom, or snow), down and to the right, across the bookcase, each season in
+    # its own way, as on the last page (gen_hero.MOTION) - (how many, how far across beside autumn's, how long on the
+    # way, how much they turn): snow is more, slower, nearly straight down and hardly turning; spring's blossom is
+    # quick, blown well across, and tumbling; none in summer
+    count, wind, slow, turn = {"winter": (12, .12, 1.6, .2), "spring": (8, 1.5, .7, 1.6), "summer": (0, 1, 1, 1)}.get(SEASON, (7, 1, 1, 1))
+    for k in range(count):
+        x0, dur = rnd.uniform(-40, W * (1 - .45 * wind)), rnd.uniform(14, 22) * slow
         beg, s, spin = -rnd.uniform(0, dur), rnd.uniform(1.6, 2.6), rnd.uniform(0, 360)
         petals.append(f'<g opacity="{rnd.uniform(.55, .85):.2f}"><animateTransform attributeName="transform" type="translate" '
-                      f'values="{x0:.0f} -20;{x0 + W * .22:.0f} {H * .5:.0f};{x0 + W * .45:.0f} {H + 20}" dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/>'
+                      f'values="{x0:.0f} -20;{x0 + W * .22 * wind:.0f} {H * .5:.0f};{x0 + W * .45 * wind:.0f} {H + 20}" dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/>'
                       f'<{DRIFT[0]} {DRIFT[1]} transform="translate(1 2) scale({s * DRIFT_K:.2f})" fill="{WORKS["petalShade"]}" opacity=".25">'
-                      f'<animateTransform attributeName="transform" type="rotate" values="{spin:.0f};{spin + 220:.0f};{spin + 360:.0f}" additive="sum" '
+                      f'<animateTransform attributeName="transform" type="rotate" values="{spin:.0f};{spin + 220 * turn:.0f};{spin + 360 * turn:.0f}" additive="sum" '
                       f'dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/></{DRIFT[0]}>'
                       f'<{DRIFT[0]} {DRIFT[1]} transform="scale({s * DRIFT_K:.2f})" fill="{drift_color(k, WORKS.get("petal"))}">'
-                      f'<animateTransform attributeName="transform" type="rotate" values="{spin:.0f};{spin + 220:.0f};{spin + 360:.0f}" additive="sum" '
+                      f'<animateTransform attributeName="transform" type="rotate" values="{spin:.0f};{spin + 220 * turn:.0f};{spin + 360 * turn:.0f}" additive="sum" '
                       f'dur="{dur:.1f}s" begin="{beg:.1f}s" repeatCount="indefinite"/></{DRIFT[0]}></g>')
     css = (fontface("caveat") + ".h{font-family:'Caveat',cursive;font-weight:600}"
            "@keyframes up{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}"
